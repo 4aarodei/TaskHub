@@ -1,0 +1,62 @@
+﻿@model List<TaskModel>
+
+@{
+    ViewData["Title"] = "Мої завдання";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>📌 Мої завдання</h2>
+        <a asp-action="Create" class="btn btn-success">➕ Додати завдання</a>
+    </div>
+
+    @if (Model.Count == 0)
+    {
+        <div class="alert alert-info text-center">
+            <p>У вас поки немає завдань. Додайте нове!</p>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>#</th>
+                        <th>Назва</th>
+                        <th>Опис</th>
+                        <th>Статус</th>
+                        <th>Дедлайн</th>
+                        <th class="text-end">Дії</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var task in Model)
+                    {
+                        <tr>
+                            <td>@task.ID</td>
+                            <td>@task.Title</td>
+                            <td>@(string.IsNullOrEmpty(task.Description) ? "Без опису" : task.Description)</td>
+                            <td>
+                                @if (task.IsComplete)
+                                {
+                                    <span class="badge bg-success">Виконано</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-warning text-dark">В процесі</span>
+                                }
+                            </td>
+                            <td>@task.Deadline.ToString("dd.MM.yyyy")</td>
+                            <td class="text-end">
+                                <a asp-action="Edit" asp-route-id="@task.ID" class="btn btn-sm btn-primary">✏️ Редагувати</a>
+                                <a asp-action="Details" asp-route-id="@task.ID" class="btn btn-sm btn-info">ℹ️ Деталі</a>
+                                <a asp-action="Delete" asp-route-id="@task.ID" class="btn btn-sm btn-danger" onclick="return confirm('Ви впевнені, що хочете видалити це завдання?')">🗑 Видалити</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

@@ -4,7 +4,7 @@ using TaskHub.Models;
 
 namespace TaskHub.Data
 {
-    public class ApplicationDbContext : IdentityDbContext<User>
+    public class ApplicationDbContext : IdentityDbContext<AppUser>
     {
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
             : base(options)
@@ -20,7 +20,7 @@ namespace TaskHub.Data
 
             // Налаштування зовнішніх ключів
             modelBuilder.Entity<TaskModel>()
-                .HasOne(t => t.User)
+                .HasOne(t => t.AppUser)
                 .WithMany(u => u.Tasks)
                 .HasForeignKey(t => t.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
