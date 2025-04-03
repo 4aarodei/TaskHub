@@ -13,6 +13,7 @@ namespace TaskHub.Data
 
         public DbSet<TaskModel> Tasks { get; set; }
         public DbSet<TeamModel> Teams { get; set; }
+        public DbSet<TeamInvite> TeamInvites { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

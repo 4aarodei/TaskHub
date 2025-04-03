@@ -1,16 +1,16 @@
 ﻿@model TaskHub.Models.TaskModel
 
 @{
-    ViewData["Title"] = "Create";
+    ViewData["Title"] = "TeamCreate";
 }
 
-<h1>Create</h1>
+<h1>TeamCreate</h1>
 
 <h4>TaskModel</h4>
 <hr />
 <div class="row">
     <div class="col-md-4">
-        <form asp-action="Create">
+        <form asp-action="TeamCreate">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <div class="form-group">
                 <label asp-for="Title" class="control-label"></label>
@@ -27,11 +27,6 @@
                 <input asp-for="DueDate" class="form-control" />
                 <span asp-validation-for="DueDate" class="text-danger"></span>
             </div>
-            <div class="form-group form-check">
-                <label class="form-check-label">
-                    <input class="form-check-input" asp-for="IsComplete" /> @Html.DisplayNameFor(model => model.IsComplete)
-                </label>
-            </div>
             <div class="form-group">
                 <label asp-for="CreatedDate" class="control-label"></label>
                 <input asp-for="CreatedDate" class="form-control" />
@@ -46,7 +41,7 @@
                 <select asp-for="TeamId" class ="form-control" asp-items="ViewBag.TeamId"></select>
             </div>
             <div class="form-group">
-                <input type="submit" value="Create" class="btn btn-primary" />
+                <input type="submit" value="TeamCreate" class="btn btn-primary" />
             </div>
         </form>
     </div>

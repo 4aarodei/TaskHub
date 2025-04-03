@@ -19,26 +19,26 @@ namespace TaskHub.Controllers
 
         private readonly UserService _userService;
         private readonly TaskService _taskService;
+        private readonly TeamService _teamService;
+        private readonly InviteService _inviteService;
 
-        public TaskController(/*ApplicationDbContext context,*/ UserService userService,TaskService taskService )
+        public TaskController(/*ApplicationDbContext context,*/ UserService userService, TaskService taskService, InviteService inviteService)
         {
             //_context = context;
-
+            _inviteService = inviteService;
             _userService = userService;
             _taskService = taskService;
         }
 
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(Guid teamId)
         {
-            var user = await _userService.GetCurrentUserAsync();
-            if (user == null)
+            if (teamId == Guid.Empty)
             {
-                return RedirectToAction(/* силка на логін */);
+                var user = await _userService.GetCurrentUserAsync();
+                var userTeams = await _teamService.GetAllTeamsForUserAsync(user.Id);
+                var stopVar = new string("  ");
             }
-
-          var userTasks = await _taskService.GetAllTasksByUserIdAsync(user.Id);
-
-            return View(userTasks);
+            return View();
         }
 
         // GET: Task/Details/{id}
@@ -47,21 +47,18 @@ namespace TaskHub.Controllers
             return View();
         }
 
-        // GET: Task/Create
-        public IActionResult Create()
+        public class GetCreateModel
         {
+            public GetCreateModel(List<AppUser> usersOnTeam, List<TeamModel> teamModels)
+            {
+                UsersOnTeam = usersOnTeam;
+                TeamModels = teamModels;
+            }
 
-
-            return View();
+            public List<AppUser> UsersOnTeam { get; set; }
+            public List<TeamModel> TeamModels { get; set; }
         }
-
-        // POST: Task/Create
-        [HttpPost]
-        public async Task<IActionResult> Create(TaskModel task)
-        {
-            return RedirectToAction(nameof(Index));
-        }
-
+        
         // GET: Task/Edit/{id}
         public async Task<IActionResult> Edit(int id)
         {

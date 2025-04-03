@@ -2,21 +2,32 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using TaskHub.Data;
 using TaskHub.Models;
+using TaskHub.Services;
 
 namespace TaskHub.Controllers
 {
     public class TeamController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly UserService _userService;
+        private readonly TaskService _taskService;
+        private readonly TeamService _teamService;
+        private readonly InviteService _inviteService;
 
-        public TeamController(ApplicationDbContext context)
+        public TeamController(ApplicationDbContext context, TaskService taskService, TeamService teamService,
+            UserService userService, InviteService inviteService)
         {
             _context = context;
+            _taskService = taskService;
+            _teamService = teamService;
+            _userService = userService;
+            _inviteService = inviteService;
         }
 
         // GET: Team
@@ -25,134 +36,91 @@ namespace TaskHub.Controllers
             return View(await _context.Teams.ToListAsync());
         }
 
-        // GET: Team/Details/5
-        public async Task<IActionResult> Details(Guid? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var teamModel = await _context.Teams
-                .FirstOrDefaultAsync(m => m.ID == id);
-            if (teamModel == null)
-            {
-                return NotFound();
-            }
-
-            return View(teamModel);
-        }
-
-        // GET: Team/Create
-        public IActionResult Create()
+        // GET: Team/TeamCreate
+        [HttpGet]
+        public IActionResult TeamCreate()
         {
             return View();
         }
 
-        // POST: Team/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("ID,Name,CreatedDate")] TeamModel teamModel)
+        public async Task<IActionResult> TeamCreate([Bind("ID,Name,CreatedDate")] TeamModel teamModel)
         {
             if (ModelState.IsValid)
             {
                 teamModel.ID = Guid.NewGuid();
                 _context.Add(teamModel);
                 await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                return RedirectToAction("Index");
             }
+
             return View(teamModel);
         }
 
-        // GET: Team/Edit/5
-        public async Task<IActionResult> Edit(Guid? id)
+        public async Task<IActionResult> Details(Guid teamId)
         {
-            if (id == null)
+            if (teamId != Guid.Empty)
             {
-                return NotFound();
-            }
+                var team = await _context.Teams
+                    .Include(t => t.Users)
+                    .Include(t => t.Tasks)
+                    .FirstOrDefaultAsync(t => t.ID == teamId);
 
-            var teamModel = await _context.Teams.FindAsync(id);
-            if (teamModel == null)
-            {
-                return NotFound();
-            }
-            return View(teamModel);
-        }
-
-        // POST: Team/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, [Bind("ID,Name,CreatedDate")] TeamModel teamModel)
-        {
-            if (id != teamModel.ID)
-            {
-                return NotFound();
-            }
-
-            if (ModelState.IsValid)
-            {
-                try
+                if (team == null)
                 {
-                    _context.Update(teamModel);
-                    await _context.SaveChangesAsync();
+                    return NotFound("Team not found");
                 }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!TeamModelExists(teamModel.ID))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-                return RedirectToAction(nameof(Index));
+                return View(team);
             }
-            return View(teamModel);
+            return NotFound("Team not found");
         }
 
-        // GET: Team/Delete/5
-        public async Task<IActionResult> Delete(Guid? id)
+        [HttpPost("generate-invite")]
+        public async Task<IActionResult> GenerateInvite([FromBody] Guid teamId)
         {
-            if (id == null)
+            try
             {
-                return NotFound();
+                var inviteLink = await _inviteService.GenerateInviteAsync(teamId, Request.Scheme, Request.Host.Value);
+                return Ok(new { link = inviteLink });
             }
-
-            var teamModel = await _context.Teams
-                .FirstOrDefaultAsync(m => m.ID == id);
-            if (teamModel == null)
+            catch (UnauthorizedAccessException ex)
             {
-                return NotFound();
+                return Unauthorized(ex.Message);
             }
-
-            return View(teamModel);
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
-        // POST: Team/Delete/5
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(Guid id)
+        [HttpGet("/TeamInvite/join")]
+        public async Task<IActionResult> JoinTeam([FromQuery] string token)
         {
-            var teamModel = await _context.Teams.FindAsync(id);
-            if (teamModel != null)
+            try
             {
-                _context.Teams.Remove(teamModel);
+                await _inviteService.JoinTeamAsync(token);
+                return Ok("You have been added to the team!");
             }
-
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
-        }
-
-        private bool TeamModelExists(Guid id)
-        {
-            return _context.Teams.Any(e => e.ID == id);
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(ex.Message);
+            }
         }
     }
 }

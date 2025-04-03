@@ -19,6 +19,8 @@ builder.Services.AddControllersWithViews();
 // Add custom services
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<TaskService>();
+builder.Services.AddScoped<TeamService>();
+builder.Services.AddScoped<InviteService>();
 builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();
