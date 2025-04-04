@@ -1,0 +1,26 @@
+body {
+    background-color: #121212;
+    color: white;
+}
+
+.navbar-light {
+    background-color: #333;
+    color: white;
+}
+
+    .navbar-light .navbar-nav .nav-link {
+        color: white;
+    }
+
+.footer {
+    background-color: #333;
+    color: white;
+}
+
+    .footer a {
+        color: white;
+    }
+
+.container {
+    background-color: #1e1e1e;
+}

@@ -1,14 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Security.Claims;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using TaskHub.Data;
+﻿using Microsoft.AspNetCore.Mvc;
 using TaskHub.Models;
+using TaskHub.Models.TaskViewModel;
 using TaskHub.Services;
 
 namespace TaskHub.Controllers
@@ -22,29 +14,47 @@ namespace TaskHub.Controllers
         private readonly TeamService _teamService;
         private readonly InviteService _inviteService;
 
-        public TaskController(/*ApplicationDbContext context,*/ UserService userService, TaskService taskService, InviteService inviteService)
+        public TaskController(/*ApplicationDbContext context,*/ UserService userService, TaskService taskService, InviteService inviteService, TeamService teamService)
         {
             //_context = context;
+            _teamService = teamService;
             _inviteService = inviteService;
             _userService = userService;
             _taskService = taskService;
         }
 
-        public async Task<IActionResult> Index(Guid teamId)
+        public async Task<IActionResult> NoTeamsPreIndex()
         {
-            if (teamId == Guid.Empty)
-            {
-                var user = await _userService.GetCurrentUserAsync();
-                var userTeams = await _teamService.GetAllTeamsForUserAsync(user.Id);
-                var stopVar = new string("  ");
-            }
             return View();
         }
 
-        // GET: Task/Details/{id}
-        public async Task<IActionResult> Details(int id)
+        public async Task<IActionResult> PreIndex(Guid teamId)
         {
-            return View();
+
+            var user = await _userService.GetCurrentUserAsync();
+            var userTeams = await _teamService.GetAllTeamsForUserAsync(user.Id);
+            if (userTeams.Count == 0)
+            {
+                return RedirectToAction("NoTeamsPreIndex");
+
+            }
+            return View(userTeams);
+        }
+
+        // GET: Task/Details/{id}
+        [HttpGet]
+        public async Task<IActionResult> Index(Guid teamId)
+        {
+            var user = await _userService.GetCurrentUserAsync();
+            var userTask = await _taskService.GetAllTasksByUserId_OnTeamAsync(user.Id, teamId);
+            var team = await _teamService.GetTeamByIdAsync(teamId);
+
+            var model = new IndexModel(userTask, team)
+            {
+                TaskList = userTask,
+                TeamModel = team
+            };
+            return View(model);
         }
 
         public class GetCreateModel
@@ -58,7 +68,7 @@ namespace TaskHub.Controllers
             public List<AppUser> UsersOnTeam { get; set; }
             public List<TeamModel> TeamModels { get; set; }
         }
-        
+
         // GET: Task/Edit/{id}
         public async Task<IActionResult> Edit(int id)
         {
@@ -69,7 +79,7 @@ namespace TaskHub.Controllers
         [HttpPost]
         public async Task<IActionResult> Edit(TaskModel task)
         {
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(PreIndex));
         }
 
         // GET: Task/Delete/{id}
@@ -82,7 +92,7 @@ namespace TaskHub.Controllers
         [HttpPost, ActionName("Delete")]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(PreIndex));
         }
 
     }

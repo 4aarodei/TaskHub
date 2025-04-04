@@ -20,6 +20,12 @@ namespace TaskHub.Services
                 .Where(t => t.UserId == userId)
                 .ToListAsync();
         }
+        public async Task<List<TaskModel>> GetAllTasksByUserId_OnTeamAsync(string userId, Guid teamId)
+        {
+            return await _context.Tasks
+                .Where(t => t.UserId == userId && t.TeamId == teamId)
+                .ToListAsync();
+        }
 
         // Отримати задачу за ID
         public async Task<TaskModel?> GetTaskByIdAsync(int id)

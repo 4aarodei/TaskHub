@@ -7,7 +7,9 @@
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/TaskHub.styles.css" asp-append-version="true" />
-</head>
+    <!-- Додаємо чорну тему -->
+@*     <link rel="stylesheet" href="~/css/dark-theme.css" asp-append-version="true" />
+ *@</head>
 <body>
     <header>
         <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
@@ -26,7 +28,7 @@
                             <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Task" asp-action="Index">Task</a>
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Task" asp-action="PreIndex">Task</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-controller="Team" asp-action="Index">Team Manager</a>
