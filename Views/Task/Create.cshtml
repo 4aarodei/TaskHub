@@ -1,56 +1,75 @@
 ﻿@model TaskHub.Models.TaskModel
 
 @{
-    ViewData["Title"] = "TeamCreate";
+    ViewData["Title"] = "Create Task";
 }
 
-<h1>TeamCreate</h1>
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Create New Task for Team: @Model.Team.Name</h4>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Create">
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
-<h4>TaskModel</h4>
-<hr />
-<div class="row">
-    <div class="col-md-4">
-        <form asp-action="TeamCreate">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <div class="form-group">
-                <label asp-for="Title" class="control-label"></label>
-                <input asp-for="Title" class="form-control" />
-                <span asp-validation-for="Title" class="text-danger"></span>
+                        <!-- Task Title -->
+                        <div class="mb-3">
+                            <label asp-for="Title" class="form-label">Task Title</label>
+                            <input asp-for="Title" class="form-control" />
+                            <span asp-validation-for="Title" class="text-danger"></span>
+                        </div>
+
+                        <!-- Task Description -->
+                        <div class="mb-3">
+                            <label asp-for="Description" class="form-label">Task Description</label>
+                            <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+                            <span asp-validation-for="Description" class="text-danger"></span>
+                        </div>
+
+                        <!-- Due Date -->
+                        <div class="mb-3">
+                            <label asp-for="DueDate" class="form-label">Due Date</label>
+                            <input asp-for="DueDate" type="datetime-local" class="form-control" />
+                            <span asp-validation-for="DueDate" class="text-danger"></span>
+                        </div>
+
+                        <!-- Created Date -->
+                        <div class="mb-3">
+                            <label asp-for="CreatedDate" class="form-label">Created Date</label>
+                            <input asp-for="CreatedDate" type="datetime-local" class="form-control" />
+                            <span asp-validation-for="CreatedDate" class="text-danger"></span>
+                        </div>
+
+                        <!-- User Assignment -->
+                        <div class="mb-3">
+                            <label asp-for="UserId" class="form-label">Assign to User</label>
+                            <select asp-for="UserId" class="form-select">
+                                <option value="">-- None --</option>
+                                @foreach (var user in ViewBag.UsersOnTeam)
+                                {
+                                    <option value="@user.Id">@user.UserName</option>
+                                }
+                            </select>
+                            <span asp-validation-for="UserId" class="text-danger"></span>
+                        </div>
+
+                        <!-- Team Assignment -->
+                        <div class="mb-3">
+                            <label asp-for="TeamId" class="form-label">Assign to Team</label>
+                            <input asp-for="TeamId" type="hidden" value="@Model.TeamId" />
+                            <span class="form-control">@Model.Team.Name</span>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a asp-action="PreIndex" class="btn btn-outline-secondary">← Back to List</a>
+                            <button type="submit" class="btn btn-success">✅ Create Task</button>
+                        </div>
+                    </form>
+                </div>
             </div>
-            <div class="form-group">
-                <label asp-for="Description" class="control-label"></label>
-                <input asp-for="Description" class="form-control" />
-                <span asp-validation-for="Description" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="DueDate" class="control-label"></label>
-                <input asp-for="DueDate" class="form-control" />
-                <span asp-validation-for="DueDate" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="CreatedDate" class="control-label"></label>
-                <input asp-for="CreatedDate" class="form-control" />
-                <span asp-validation-for="CreatedDate" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="UserId" class="control-label"></label>
-                <select asp-for="UserId" class ="form-control" asp-items="ViewBag.UserId"></select>
-            </div>
-            <div class="form-group">
-                <label asp-for="TeamId" class="control-label"></label>
-                <select asp-for="TeamId" class ="form-control" asp-items="ViewBag.TeamId"></select>
-            </div>
-            <div class="form-group">
-                <input type="submit" value="TeamCreate" class="btn btn-primary" />
-            </div>
-        </form>
+        </div>
     </div>
 </div>
-
-<div>
-    <a asp-action="PreIndex">Back to List</a>
-</div>
-
-@section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
-}

@@ -5,59 +5,55 @@
 }
 
 <div class="container mt-4">
-    <div class="row">
-        <div class="col-md-8">
-            <div class="card shadow-sm">
-                <div class="card-header bg-primary text-white">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                     <h4 class="mb-0">Team: @Model.TeamModel.Name</h4>
+                    <span class="badge bg-light text-dark">Created: @Model.TeamModel.CreatedDate.ToString("dd MMM yyyy")</span>
                 </div>
                 <div class="card-body">
-                    <p><strong>Created:</strong> @Model.TeamModel.CreatedDate.ToString("dd MMM yyyy")</p>
-                    <p><strong>Members:</strong> @Model.TeamModel.Users.Count</p>
+                    <p class="mb-2"><strong>Members:</strong> @Model.TeamModel.Users.Count</p>
+                    <div class="d-flex flex-wrap">
+                        @foreach (var user in Model.UsersOnTeam)
+                        {
+                            <span class="badge bg-secondary me-2 mb-2">@user.UserName</span>
+                        }
+                    </div>
                 </div>
             </div>
 
-            <div class="card shadow-sm mt-4">
-                <div class="card-header bg-success text-white">
+            <div class="card shadow-lg border-0 mt-4">
+                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
                     <h4 class="mb-0">Tasks</h4>
+                    <span class="badge bg-light text-dark">Total: @Model.TaskList.Count</span>
+                    <form asp-controller="Task" asp-action="Create" method="get" class="mb-0">
+                        <input type="hidden" name="teamId" value="@Model.TeamModel.ID" />
+                        <button type="submit" class="btn btn-light btn-sm">➕ Create Task</button>
+                    </form>
                 </div>
                 <div class="card-body">
                     @if (Model.TaskList.Any())
                     {
-                        <ul class="list-group">
+                        <ul class="list-group list-group-flush">
                             @foreach (var task in Model.TaskList)
                             {
                                 <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    <span>@task.Title</span>
-                                    <span class="badge bg-secondary">@task.IsComplete</span>
+                                    <div>
+                                        <h6 class="mb-1">@task.Title</h6>
+                                        <small class="text-muted">Status: @(task.IsComplete ? "Completed" : "Pending")</small>
+                                    </div>
+                                    <span class="badge @(task.IsComplete ? "bg-success" : "bg-warning text-dark")">@(task.IsComplete ? "✓" : "✗")</span>
                                 </li>
                             }
                         </ul>
                     }
                     else
                     {
-                        <p class="text-muted">No tasks available.</p>
+                        <p class="text-muted text-center">No tasks available.</p>
                     }
                 </div>
             </div>
         </div>
     </div>
 </div>
-
-@* <script>
-    function generateInvite() {
-        let teamId = document.getElementById("teamId").value;
-        fetch("/generate-invite", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(teamId)
-        })
-        .then(response => response.json())
-        .then(data => {
-            document.getElementById("inviteLink").value = data.link;
-            navigator.clipboard.writeText(data.link);
-            alert("Invite link copied to clipboard!");
-        })
-        .catch(error => console.error("Error generating invite:", error));
-    }
-</script> *@

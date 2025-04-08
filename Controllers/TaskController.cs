@@ -47,26 +47,45 @@ namespace TaskHub.Controllers
         {
             var user = await _userService.GetCurrentUserAsync();
             var userTask = await _taskService.GetAllTasksByUserId_OnTeamAsync(user.Id, teamId);
+            var teamTasks = await _taskService.GetAllTasksForTeamAsync(teamId);
             var team = await _teamService.GetTeamByIdAsync(teamId);
+            var userOnTeam = await _teamService.GetUserForTeamAsync(teamId);
 
-            var model = new IndexModel(userTask, team)
+            var model = new IndexModel(userTask, team, userOnTeam, teamTasks)
             {
                 TaskList = userTask,
-                TeamModel = team
+                TeamModel = team,
+                UsersOnTeam = userOnTeam,
+                TeamTasks = teamTasks
             };
             return View(model);
         }
 
-        public class GetCreateModel
+        [HttpGet]
+        public async Task<IActionResult> Create(Guid teamId)
         {
-            public GetCreateModel(List<AppUser> usersOnTeam, List<TeamModel> teamModels)
-            {
-                UsersOnTeam = usersOnTeam;
-                TeamModels = teamModels;
-            }
+            var team = await _teamService.GetTeamByIdAsync(teamId);
+            var usersOnTeam = await _teamService.GetUserForTeamAsync(teamId);
 
-            public List<AppUser> UsersOnTeam { get; set; }
-            public List<TeamModel> TeamModels { get; set; }
+            var model = new TaskModel
+            {
+                Team = team,
+                TeamId = team.ID,
+                AppUser = new AppUser(),
+                UserId = string.Empty
+            };
+
+            ViewBag.UsersOnTeam = usersOnTeam;
+
+            return View(model);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Create(TaskModel task)
+        {
+
+
+           return RedirectToAction();
         }
 
         // GET: Task/Edit/{id}

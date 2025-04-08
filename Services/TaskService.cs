@@ -13,6 +13,13 @@ namespace TaskHub.Services
             _context = context;
         }
 
+        public async Task<List<TaskModel>> GetAllTasksForTeamAsync(Guid teamId)
+        {
+            return await _context.Tasks
+                .Where(t => t.TeamId == teamId)
+                .ToListAsync();
+        }
+
         // Отримати всі задачі користувача
         public async Task<List<TaskModel>> GetAllTasksByUserIdAsync(string userId)
         {
