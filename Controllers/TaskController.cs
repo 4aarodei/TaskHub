@@ -72,7 +72,9 @@ namespace TaskHub.Controllers
                 Team = team,
                 TeamId = team.ID,
                 AppUser = new AppUser(),
-                UserId = string.Empty
+                UserId = string.Empty,
+                CreatedDate = DateTime.UtcNow.AddSeconds(-DateTime.UtcNow.Second).AddMilliseconds(-DateTime.UtcNow.Millisecond),
+                Deadline = DateTime.UtcNow.AddSeconds(-DateTime.UtcNow.Second).AddMilliseconds(-DateTime.UtcNow.Millisecond)
             };
 
             ViewBag.UsersOnTeam = usersOnTeam;
@@ -83,9 +85,30 @@ namespace TaskHub.Controllers
         [HttpPost]
         public async Task<IActionResult> Create(TaskModel task)
         {
+            var taskTeam = await _teamService.GetTeamByIdAsync(task.TeamId);
+            task.Team = taskTeam;
 
+            if (ModelState.IsValid)
+            {
+                foreach (var state in ModelState)
+                {
+                    foreach (var error in state.Value.Errors)
+                    {
+                        Console.WriteLine($"Property: {state.Key}, Error: {error.ErrorMessage}");
+                    }
+                }
+                await _taskService.AddTaskAsync(task);
+                return RedirectToAction(nameof(Index), new { teamId = task.TeamId });
+            }
 
-           return RedirectToAction();
+            // Якщо модель невалідна — повторно отримуємо команду та користувачів
+            var team = await _teamService.GetTeamByIdAsync(task.TeamId);
+            var usersOnTeam = await _teamService.GetUserForTeamAsync(task.TeamId);
+            task.Team = team;
+
+            ViewBag.UsersOnTeam = usersOnTeam;
+
+            return View(task);
         }
 
         // GET: Task/Edit/{id}
