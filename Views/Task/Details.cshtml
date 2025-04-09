@@ -1,0 +1,19 @@
+﻿@model TaskModel
+
+@{
+    ViewData["Title"] = "Task Details";
+}
+
+<div class="container mt-4">
+    <div class="card shadow border-0">
+        <div class="card-header bg-info text-white">
+            <h4 class="mb-0">@Model.Title</h4>
+        </div>
+        <div class="card-body">
+            <p><strong>Description:</strong> @Model.Description</p>
+            <p><strong>Status:</strong> @(Model.IsComplete ? "Completed ✅" : "Pending ⏳")</p>
+            <p><strong>Created:</strong> @Model.CreatedDate.ToString("dd MMM yyyy")</p>
+            <a asp-action="Index" asp-controller="Team" asp-route-teamId="@Model.TeamId" class="btn btn-secondary">← Back to Dashboard</a>
+        </div>
+    </div>
+</div>

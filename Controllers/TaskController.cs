@@ -46,19 +46,23 @@ namespace TaskHub.Controllers
         public async Task<IActionResult> Index(Guid teamId)
         {
             var user = await _userService.GetCurrentUserAsync();
-            var userTask = await _taskService.GetAllTasksByUserId_OnTeamAsync(user.Id, teamId);
-            var userOnTeam = await _teamService.GetUserForTeamAsync(teamId);
 
-            var teamTasks = await _taskService.GetAllTasksForTeamAsync(teamId);
+            var userTask = await _taskService.GetAllTasksByUserId_OnTeamAsync(user.Id, teamId);
+            var allTeamTasks = await _taskService.GetAllTasksForTeamAsync(teamId);
+            var taskWithoutUsers = await _taskService.GetAllTaskWithoutUser(teamId);
+
+            var usersOnTeam = await _teamService.GetUsersForTeamAsync(teamId);
             var team = await _teamService.GetTeamByIdAsync(teamId);
 
-            var model = new IndexModel(userTask, team, userOnTeam, teamTasks)
+            var model = new IndexModel(taskWithoutUsers, usersOnTeam, userTask, allTeamTasks, team)
             {
-                TaskList = userTask,
+                TaskWithoutUser = taskWithoutUsers,
+                UserTaskList = userTask,
                 TeamModel = team,
-                UsersOnTeam = userOnTeam,
-                TeamTasks = teamTasks
+                UsersOnTeam = usersOnTeam,
+                AllTeamTasks = allTeamTasks
             };
+
             return View(model);
         }
 
@@ -66,7 +70,7 @@ namespace TaskHub.Controllers
         public async Task<IActionResult> Create(Guid teamId)
         {
             var team = await _teamService.GetTeamByIdAsync(teamId);
-            var usersOnTeam = await _teamService.GetUserForTeamAsync(teamId);
+            var usersOnTeam = await _teamService.GetUsersForTeamAsync(teamId);
 
             var model = new TaskModel
             {
@@ -95,31 +99,23 @@ namespace TaskHub.Controllers
 
             task.Team = taskTeam;
 
-            if (ModelState.IsValid)
-            {
-                await _taskService.AddTaskAsync(task);
-                return RedirectToAction(nameof(Index), new { teamId = task.TeamId });
-            }
-            else
-            {
-                // Перевірка помилок у моделі
-                foreach (var modelState in ViewData.ModelState.Values)
-                {
-                    foreach (var error in modelState.Errors)
-                    {
-                        Console.WriteLine(error.ErrorMessage);
-                    }
-                }
-            }
+            //if (ModelState.IsValid)
+            //{
+            await _taskService.AddTaskAsync(task);
+            return RedirectToAction(nameof(Index), new { teamId = task.TeamId });
+            //}
+            //else
+            //{
+            //    // Перевірка помилок у моделі
+            //    foreach (var modelState in ViewData.ModelState.Values)
+            //    {
+            //        foreach (var error in modelState.Errors)
+            //        {
+            //            Console.WriteLine(error.ErrorMessage);
+            //        }
+            //    }
+            //}
 
-            // Якщо модель невалідна — повторно отримуємо команду та користувачів
-            var team = await _teamService.GetTeamByIdAsync(task.TeamId);
-            var usersOnTeam = await _teamService.GetUserForTeamAsync(task.TeamId);
-            task.Team = team;
-
-            ViewBag.UsersOnTeam = usersOnTeam;
-
-            return View(task);
         }
 
         // GET: Task/Edit/{id}
@@ -146,6 +142,25 @@ namespace TaskHub.Controllers
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             return RedirectToAction(nameof(PreIndex));
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Details(Guid id)
+        {
+            var task = await _taskService.GetTaskByIdAsync(id);
+            if (task == null)
+                return NotFound();
+
+            return View(task); // має бути створена вʼюха Views/Task/Details.cshtml
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> AssignToMe(Guid taskId, Guid teamId)
+        {
+            var user = await _userService.GetCurrentUserAsync();
+            await _taskService.AssignTaskToUserAsync(taskId, user.Id);
+
+            return RedirectToAction("Index", new { teamId = teamId });
         }
 
     }

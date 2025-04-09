@@ -13,6 +13,16 @@ namespace TaskHub.Services
             _context = context;
         }
 
+        public async Task AssignTaskToUserAsync(Guid taskId, string userId)
+        {
+            var task = await _context.Tasks.FindAsync(taskId);
+            if (task != null && task.UserId == null)
+            {
+                task.UserId = userId;
+                await _context.SaveChangesAsync();
+            }
+        }
+
         public async Task<List<TaskModel>> GetTasksWithUserAsync()
         {
             return await _context.Tasks.Where(t => t.UserId != null)
@@ -49,7 +59,7 @@ namespace TaskHub.Services
         }
 
         // Отримати задачу за ID
-        public async Task<TaskModel?> GetTaskByIdAsync(int id)
+        public async Task<TaskModel?> GetTaskByIdAsync(Guid id)
         {
             return await _context.Tasks.FindAsync(id);
         }

@@ -52,7 +52,7 @@ namespace TaskHub.Services
                 .ToListAsync();
         }
 
-        public async Task<List<AppUser>> GetUserForTeamAsync(Guid TeamId)
+        public async Task<List<AppUser>> GetUsersForTeamAsync(Guid TeamId)
         {
             var team = await _context.Teams
                 .Include(t => t.Users)

@@ -2,16 +2,19 @@
 {
     public class IndexModel
     {
-        public IndexModel(List<TaskModel> taskList, TeamModel teamModel, List<AppUser> usersOnTeam, List<TaskModel> teamTasks)
+        public IndexModel(List<TaskModel> taskWithoutUser, List<AppUser> usersOnTeam, List<TaskModel> userTaskList, List<TaskModel> allTeamTasks, TeamModel teamModel)
         {
-            TaskList = taskList;
-            TeamModel = teamModel;
+            TaskWithoutUser = taskWithoutUser;
             UsersOnTeam = usersOnTeam;
-            TeamTasks = teamTasks;
+            UserTaskList = userTaskList;
+            AllTeamTasks = allTeamTasks;
+            TeamModel = teamModel;
         }
+
+        public List<TaskModel> TaskWithoutUser { get; set; }
         public List<AppUser> UsersOnTeam { get; set; }
-        public List<TaskModel> TaskList { get; set; }
-        public List<TaskModel> TeamTasks { get; set; }
+        public List<TaskModel> UserTaskList { get; set; }
+        public List<TaskModel> AllTeamTasks { get; set; }
 
         public TeamModel TeamModel { get; set; }
     }
