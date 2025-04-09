@@ -47,9 +47,10 @@ namespace TaskHub.Controllers
         {
             var user = await _userService.GetCurrentUserAsync();
             var userTask = await _taskService.GetAllTasksByUserId_OnTeamAsync(user.Id, teamId);
+            var userOnTeam = await _teamService.GetUserForTeamAsync(teamId);
+
             var teamTasks = await _taskService.GetAllTasksForTeamAsync(teamId);
             var team = await _teamService.GetTeamByIdAsync(teamId);
-            var userOnTeam = await _teamService.GetUserForTeamAsync(teamId);
 
             var model = new IndexModel(userTask, team, userOnTeam, teamTasks)
             {
@@ -86,19 +87,29 @@ namespace TaskHub.Controllers
         public async Task<IActionResult> Create(TaskModel task)
         {
             var taskTeam = await _teamService.GetTeamByIdAsync(task.TeamId);
+            if (taskTeam == null)
+            {
+                ModelState.AddModelError("Team", "Team not found.");
+                return View(task);
+            }
+
             task.Team = taskTeam;
 
             if (ModelState.IsValid)
             {
-                foreach (var state in ModelState)
-                {
-                    foreach (var error in state.Value.Errors)
-                    {
-                        Console.WriteLine($"Property: {state.Key}, Error: {error.ErrorMessage}");
-                    }
-                }
                 await _taskService.AddTaskAsync(task);
                 return RedirectToAction(nameof(Index), new { teamId = task.TeamId });
+            }
+            else
+            {
+                // Перевірка помилок у моделі
+                foreach (var modelState in ViewData.ModelState.Values)
+                {
+                    foreach (var error in modelState.Errors)
+                    {
+                        Console.WriteLine(error.ErrorMessage);
+                    }
+                }
             }
 
             // Якщо модель невалідна — повторно отримуємо команду та користувачів

@@ -13,6 +13,20 @@ namespace TaskHub.Services
             _context = context;
         }
 
+        public async Task<List<TaskModel>> GetTasksWithUserAsync()
+        {
+            return await _context.Tasks.Where(t => t.UserId != null)
+                .Include(t => t.AppUser)
+                .ToListAsync();
+        }
+
+        public async Task<List<TaskModel>> GetAllTaskWithoutUser(Guid teamId)
+        {
+            return await _context.Tasks
+                .Where(t => t.UserId == null && t.TeamId == teamId)
+                .ToListAsync();
+        }
+
         public async Task<List<TaskModel>> GetAllTasksForTeamAsync(Guid teamId)
         {
             return await _context.Tasks

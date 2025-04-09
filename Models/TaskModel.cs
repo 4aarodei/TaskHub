@@ -12,7 +12,7 @@
         // **Правильний зв’язок**
         public string? UserId { get; set; } // Це зовнішній ключ (FK)
         public AppUser? AppUser { get; set; }  // Навігаційна властивість
-        public TeamModel Team { get; set; } // Навігаційна властивість
+        public TeamModel? Team { get; set; } // Навігаційна властивість
         public Guid TeamId { get; set; } // Це зовнішній ключ (FK)
     }
 }
