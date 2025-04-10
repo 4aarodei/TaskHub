@@ -11,9 +11,9 @@
         </div>
         <div class="card-body">
             <p><strong>Description:</strong> @Model.Description</p>
-            <p><strong>Status:</strong> @(Model.IsComplete ? "Completed ✅" : "Pending ⏳")</p>
+            <p><strong>Status:</strong> @(Model.IsComplete ? "Виконаний ✅" : "Вільний ⏳")</p>
             <p><strong>Created:</strong> @Model.CreatedDate.ToString("dd MMM yyyy")</p>
-            <a asp-action="Index" asp-controller="Team" asp-route-teamId="@Model.TeamId" class="btn btn-secondary">← Back to Dashboard</a>
+            <a asp-action="Index" asp-controller="Task" asp-route-teamId="@Model.TeamId" class="btn btn-secondary">← Back to Dashboard</a>
         </div>
     </div>
 </div>

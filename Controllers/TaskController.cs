@@ -30,7 +30,6 @@ namespace TaskHub.Controllers
 
         public async Task<IActionResult> PreIndex(Guid teamId)
         {
-
             var user = await _userService.GetCurrentUserAsync();
             var userTeams = await _teamService.GetAllTeamsForUserAsync(user.Id);
             if (userTeams.Count == 0)
@@ -99,22 +98,8 @@ namespace TaskHub.Controllers
 
             task.Team = taskTeam;
 
-            //if (ModelState.IsValid)
-            //{
             await _taskService.AddTaskAsync(task);
             return RedirectToAction(nameof(Index), new { teamId = task.TeamId });
-            //}
-            //else
-            //{
-            //    // Перевірка помилок у моделі
-            //    foreach (var modelState in ViewData.ModelState.Values)
-            //    {
-            //        foreach (var error in modelState.Errors)
-            //        {
-            //            Console.WriteLine(error.ErrorMessage);
-            //        }
-            //    }
-            //}
 
         }
 
@@ -145,9 +130,9 @@ namespace TaskHub.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Details(Guid id)
+        public async Task<IActionResult> Details(Guid taskId)
         {
-            var task = await _taskService.GetTaskByIdAsync(id);
+            var task = await _taskService.GetTaskByIdAsync(taskId);
             if (task == null)
                 return NotFound();
 

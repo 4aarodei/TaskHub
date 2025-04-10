@@ -33,22 +33,11 @@ namespace TaskHub.Services
             return team;
         }
 
-        public async Task<List<TeamModel>> GetAllTeamsForUserAsync(string Str_userId)
+        public async Task<List<TeamModel>> GetAllTeamsForUserAsync(string userId)
         {
-            if (string.IsNullOrEmpty(Str_userId))
-            {
-                return new List<TeamModel>();
-            }
-
-            Guid userID;
-            if (!Guid.TryParse(Str_userId, out userID))
-            {
-                return new List<TeamModel>();
-            }
-
             return await _context.Teams
                 .Include(t => t.Users)
-                .Where(t => t.Users.Any(u => u.Id == userID.ToString()))
+                .Where(t => t.Users.Any(u => u.Id == userId.ToString()))
                 .ToListAsync();
         }
 
