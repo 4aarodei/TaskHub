@@ -1,126 +1,120 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using TaskHub.Data;
-using TaskHub.Models;
+﻿using Microsoft.AspNetCore.Mvc;
 using TaskHub.Services;
+using TaskHub.Models;
+using TaskHub.Models.TaskViewModel;
+using TaskHub.Models.TeamViewModel;
 
-namespace TaskHub.Controllers
+namespace TaskHub.Controllers;
+
+public class TeamController : Controller
 {
-    public class TeamController : Controller
+
+    private readonly UserService _userService;
+    private readonly TaskService _taskService;
+    private readonly TeamService _teamService;
+    private readonly InviteService _inviteService;
+
+    public TeamController(/*ApplicationDbContext context,*/ UserService userService, TaskService taskService, InviteService inviteService, TeamService teamService)
     {
-        private readonly ApplicationDbContext _context;
-        private readonly UserService _userService;
-        private readonly TaskService _taskService;
-        private readonly TeamService _teamService;
-        private readonly InviteService _inviteService;
-
-        public TeamController(ApplicationDbContext context, TaskService taskService, TeamService teamService,
-            UserService userService, InviteService inviteService)
-        {
-            _context = context;
-            _taskService = taskService;
-            _teamService = teamService;
-            _userService = userService;
-            _inviteService = inviteService;
-        }
-
-        // GET: Team
-        public async Task<IActionResult> Index()
-        {
-            return View(await _context.Teams.ToListAsync());
-        }
-
-        // GET: Team/TeamCreate
-        [HttpGet]
-        public IActionResult TeamCreate()
-        {
-            return View();
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> TeamCreate([Bind("ID,Name,CreatedDate")] TeamModel teamModel)
-        {
-            if (ModelState.IsValid)
-            {
-                teamModel.ID = Guid.NewGuid();
-                _context.Add(teamModel);
-                await _context.SaveChangesAsync();
-                return RedirectToAction("Index");
-            }
-
-            return View(teamModel);
-        }
-
-        public async Task<IActionResult> Details(Guid teamId)
-        {
-            if (teamId != Guid.Empty)
-            {
-                var team = await _context.Teams
-                    .Include(t => t.Users)
-                    .Include(t => t.Tasks)
-                    .FirstOrDefaultAsync(t => t.ID == teamId);
-
-                if (team == null)
-                {
-                    return NotFound("Team not found");
-                }
-                return View(team);
-            }
-            return NotFound("Team not found");
-        }
-
-        [HttpPost("generate-invite")]
-        public async Task<IActionResult> GenerateInvite([FromBody] Guid teamId)
-        {
-            try
-            {
-                var inviteLink = await _inviteService.GenerateInviteAsync(teamId, Request.Scheme, Request.Host.Value);
-                return Ok(new { link = inviteLink });
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                return Unauthorized(ex.Message);
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(ex.Message);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
-        }
-
-        [HttpGet("/TeamInvite/join")]
-        public async Task<IActionResult> JoinTeam([FromQuery] string token)
-        {
-            try
-            {
-                await _inviteService.JoinTeamAsync(token);
-                return Ok("You have been added to the team!");
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(ex.Message);
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(ex.Message);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return BadRequest(ex.Message);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                return Unauthorized(ex.Message);
-            }
-        }
+        //_context = context;
+        _teamService = teamService;
+        _inviteService = inviteService;
+        _userService = userService;
+        _taskService = taskService;
     }
+    public async Task<IActionResult> NoTeamsPreIndex()
+    {
+        return View();
+    }
+
+    public async Task<IActionResult> PreIndex(Guid teamId)
+    {
+        var user = await _userService.GetCurrentUserAsync();
+        var userTeams = await _teamService.GetAllTeamsForUserAsync(user.Id);
+        if (userTeams.Count == 0)
+        {
+            return RedirectToAction("NoTeamsPreIndex");
+
+        }
+        return View(userTeams);
+    }
+
+    // GET: Task/Details/{id}
+    [HttpGet]
+    public async Task<IActionResult> Index(Guid teamId)
+    {
+
+        var allTeamTasks = await _taskService.GetAllTasksForTeamAsync(teamId);
+        var taskWithoutUsers = await _taskService.GetAllTaskWithoutUser(teamId);
+
+        var usersOnTeam = await _teamService.GetUsersForTeamAsync(teamId);
+        var team = await _teamService.GetTeamByIdAsync(teamId);
+
+        var model = new IndexModel(taskWithoutUsers, usersOnTeam, allTeamTasks, team)
+        {
+            TaskWithoutUser = taskWithoutUsers,
+            TeamModel = team,
+            UsersOnTeam = usersOnTeam,
+            AllTeamTasks = allTeamTasks
+        };
+
+        return View(model);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Create(Guid teamId)
+    {
+        var team = await _teamService.GetTeamByIdAsync(teamId);
+        var usersOnTeam = await _teamService.GetUsersForTeamAsync(teamId);
+
+        if (team == null)
+        {
+            return NotFound("Team not found.");
+        }
+
+        var model = new TaskModel
+        {
+            TeamId = team.ID,
+            Team = team,
+            CreatedDate = DateTime.UtcNow,
+            Deadline = DateTime.UtcNow.AddDays(7) // Дедлайн по умолчанию через 7 дней
+        };
+
+        ViewBag.UsersOnTeam = usersOnTeam;
+        return View(model);
+    }
+
+
+    [HttpPost]
+    public async Task<IActionResult> Create(TaskModel task)
+    {
+        var team = await _teamService.GetTeamByIdAsync(task.TeamId);
+
+        task.Team = team;
+
+        if (!ModelState.IsValid)
+        {
+            var usersOnTeam = await _teamService.GetUsersForTeamAsync(task.TeamId);
+            ViewBag.UsersOnTeam = usersOnTeam;
+            return View(task);
+        }
+
+        var taskTeam = await _teamService.GetTeamByIdAsync(task.TeamId);
+
+        task.Team = taskTeam;
+
+        await _taskService.AddTaskAsync(task);
+        return RedirectToAction(nameof(Index), new { teamId = task.TeamId });
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> AssignToCurrentUser(Guid taskId, Guid teamId)
+    {
+        var user = await _userService.GetCurrentUserAsync();
+        await _taskService.AssignTaskToUserAsync(taskId, user.Id);
+
+        return RedirectToAction("Index", new { teamId = teamId });
+    }
+
 }
+

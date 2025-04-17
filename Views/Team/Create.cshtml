@@ -1,0 +1,60 @@
+﻿@model TaskHub.Models.TaskModel
+@{
+    ViewData["Title"] = "Create New Task";
+}
+
+<section class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10 col-lg-8">
+            <div class="card shadow-lg border-0 rounded-4">
+                <div class="card-body p-5">
+                    <h1 class="card-title text-center mb-4 text-primary">Create New Task</h1>
+
+                    <form asp-action="Create" method="post" novalidate>
+                        <!-- Hidden Fields -->
+                        <input type="hidden" name="TeamId" value="@Model.TeamId" />
+                        <input type="hidden" name="Team" value="@Model.Team" />
+
+                        <!-- Task Title -->
+                        <div class="mb-3">
+                            <label for="Title" class="form-label">Task Title</label>
+                            <input asp-for="Title" class="form-control" placeholder="Enter task title" />
+                            <div class="text-danger small" asp-validation-for="Title"></div>
+                        </div>
+
+                        <!-- Description -->
+                        <div class="mb-3">
+                            <label for="Description" class="form-label">Description</label>
+                            <textarea asp-for="Description" class="form-control" rows="4" placeholder="Enter task description"></textarea>
+                            <div class="text-danger small" asp-validation-for="Description"></div>
+                        </div>
+
+                        <!-- Assign to User -->
+                        <div class="mb-3">
+                            <label for="UserId" class="form-label">Assign to User</label>
+                            <select asp-for="UserId" class="form-select">
+                                <option value="">-- Unassigned --</option>
+                                @foreach (var user in ViewBag.UsersOnTeam as List<TaskHub.Models.AppUser>)
+                                {
+                                    <option value="@user.Id">@user.UserName (@user.Email)</option>
+                                }
+                            </select>
+                        </div>
+
+                        <!-- Deadline -->
+                        <div class="mb-4">
+                            <label for="Deadline" class="form-label">Deadline</label>
+                            <input asp-for="Deadline" type="date" class="form-control" />
+                            <div class="text-danger small" asp-validation-for="Deadline"></div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="d-flex justify-content-end">
+                            <button type="submit" class="btn btn-primary px-4 py-2">Create Task</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
