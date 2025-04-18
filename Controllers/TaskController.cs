@@ -19,103 +19,25 @@ namespace TaskHub.Controllers
             _taskService = taskService;
         }
 
-       
-
-        //public async Task<IActionResult> PreIndex(Guid teamId)
-        //{
-        //    var user = await _userService.GetCurrentUserAsync();
-        //    var userTeams = await _teamService.GetAllTeamsForUserAsync(user.Id);
-        //    if (userTeams.Count == 0)
-        //    {
-        //        return RedirectToAction("NoTeamsPreIndex");
-
-        //    }
-        //    return View(userTeams);
-        //}
-
-        //// GET: Task/Details/{id}
-        //[HttpGet]
-        //public async Task<IActionResult> Index(Guid teamId)
-        //{
-        //    var user = await _userService.GetCurrentUserAsync();
-
-        //    var userTask = await _taskService.GetAllTasksByUserId_OnTeamAsync(user.Id, teamId);
-        //    var allTeamTasks = await _taskService.GetAllTasksForTeamAsync(teamId);
-        //    var taskWithoutUsers = await _taskService.GetAllTaskWithoutUser(teamId);
-
-        //    var usersOnTeam = await _teamService.GetUsersForTeamAsync(teamId);
-        //    var team = await _teamService.GetTeamByIdAsync(teamId);
-
-        //    var model = new IndexModel(taskWithoutUsers, usersOnTeam, userTask, allTeamTasks, team)
-        //    {
-        //        TaskWithoutUser = taskWithoutUsers,
-        //        UserTaskList = userTask,
-        //        TeamModel = team,
-        //        UsersOnTeam = usersOnTeam,
-        //        AllTeamTasks = allTeamTasks
-        //    };
-
-        //    return View(model);
-        //}
+        public class IndexViewModel
+        {
+            public List<TaskModel>? UserTask { get; set; }
+            public string UserId { get; set; }
+        }
 
         public async Task<IActionResult> Index()
         {
             var user = await _userService.GetCurrentUserAsync();
-            var userTask = await _taskService.GetAllTasksByUserIdAsync(user.Id);
+            var userTask = await _taskService.GetNonFinishedTask(user.Id);
 
-            ViewData["user"] = user;
-
-            return View(userTask);
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> Create(Guid teamId)
-        {
-            var team = await _teamService.GetTeamByIdAsync(teamId);
-            var usersOnTeam = await _teamService.GetUsersForTeamAsync(teamId);
-
-            var model = new TaskModel
+            var model = new IndexViewModel()
             {
-                Team = team,
-                TeamId = team.ID,
-                AppUser = new AppUser(),
-                UserId = string.Empty,
-                CreatedDate = DateTime.UtcNow.AddSeconds(-DateTime.UtcNow.Second).AddMilliseconds(-DateTime.UtcNow.Millisecond),
-                Deadline = DateTime.UtcNow.AddSeconds(-DateTime.UtcNow.Second).AddMilliseconds(-DateTime.UtcNow.Millisecond)
+                UserId = user.Id,
+                UserTask = userTask
             };
-
-            ViewBag.UsersOnTeam = usersOnTeam;
 
             return View(model);
         }
-
-       
-
-        // GET: Task/Edit/{id}
-        public async Task<IActionResult> Edit(int id)
-        {
-            return View();
-        }
-
-        //// POST: Task/Edit/{id}
-        //[HttpPost]
-        //public async Task<IActionResult> Edit(TaskModel task)
-        //{
-        //    return RedirectToAction(nameof(PreIndex));
-        //}
-
-        // GET: Task/Delete/{id}
-        public async Task<IActionResult> Delete(int id)
-        {
-            return View();
-        }
-
-        //// POST: Task/Delete/{id}
-        //[HttpPost, ActionName("Delete")]
-        //public async Task<IActionResult> DeleteConfirmed(int id)
-        //{
-        //    return RedirectToAction(nameof(PreIndex));
-        //}
 
         [HttpGet]
         public async Task<IActionResult> Details(Guid taskId)
@@ -124,10 +46,30 @@ namespace TaskHub.Controllers
             if (task == null)
                 return NotFound();
 
-            return View(task); // має бути створена вʼюха Views/Task/Details.cshtml
+            return View(task);
         }
 
-        
+        [HttpPost]
+        public async Task<IActionResult> CompleteTask(Guid taskId)
+        {
+            var task  = await _taskService.GetTaskByIdAsync(taskId);
+
+            if (task == null)
+                return NotFound();
+
+            task.IsComplete = true;
+            await _taskService.UpdateTaskAsync(task);
+
+            return RedirectToAction("Index");
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> TaskHistory(Guid userId)
+        {
+            var competedTasks = await _taskService.GetDoneTask(userId);
+
+            return View(competedTasks);
+        }
 
     }
 }

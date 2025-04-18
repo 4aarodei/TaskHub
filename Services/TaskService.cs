@@ -13,6 +13,22 @@ namespace TaskHub.Services
             _context = context;
         }
 
+        public async Task<List<TaskModel>> GetDoneTask(Guid userId)
+        {
+            return await _context.Tasks.Where(t => t.UserId == userId.ToString()).ToListAsync();
+        }
+
+        public async Task<TaskModel?> GetDoneTask(Guid userId, Guid taskId)
+        {
+            return await _context.Tasks.FirstOrDefaultAsync(t => t.UserId == userId.ToString() && t.ID == taskId);
+        }
+
+        public async Task<List<TaskModel>> GetNonFinishedTask(string userId)
+        {
+            return await _context.Tasks
+                .Where(t => t.UserId == userId && !t.IsComplete)
+                .ToListAsync();
+        }
         public async Task AssignTaskToUserAsync(Guid taskId, string userId)
         {
             var task = await _context.Tasks.FindAsync(taskId);

@@ -1,22 +1,45 @@
-﻿@model List<TaskModel>
+﻿@using Microsoft.AspNetCore.Mvc.TagHelpers
+@model TaskHub.Controllers.TaskController.IndexViewModel
 
 <div class="card shadow-sm border-0 mb-4">
-    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center rounded-top-4">
         <h5 class="mb-0">Your Tasks</h5>
-                   
+        <form asp-action="TaskHistory" asp-controller="Task" method="get" class="d-inline">
+            <input type="hidden" name="userId" value="@Model.UserId" />
+            <button type="submit" class="btn btn-outline-light btn-sm">
+                <i class="bi bi-clock-history"></i> Історія виконаних
+            </button>
+        </form>
     </div>
     <div class="card-body">
-        @if (Model.Any())
+        @if (Model.UserTask != null && Model.UserTask.Any())
         {
             <ul class="list-group list-group-flush">
-                @foreach (var task in Model)
+                @foreach (var task in Model.UserTask)
                 {
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <li class="list-group-item d-flex justify-content-between flex-column flex-md-row align-items-start align-items-md-center gap-2">
                         <div>
                             <strong>@task.Title</strong><br />
-                            <small class="text-muted">Status: @(task.IsComplete ? "Completed" : "Pending")</small>
+                            <small class="text-muted">Status: @(task.IsComplete ? "✅ Completed" : "🕓 Pending")</small>
                         </div>
-                        <span class="badge @(task.IsComplete ? "bg-success" : "bg-warning text-dark")">@(task.IsComplete ? "✓" : "✗")</span>
+                        <div class="d-flex gap-2">
+                            <form asp-action="Details" asp-controller="Task" method="get" class="d-inline">
+                                <input type="hidden" name="taskId" value="@task.ID" />
+                                <button type="submit" class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-info-circle"></i> Деталі
+                                </button>
+                            </form>
+
+                            @if (!task.IsComplete)
+                            {
+                                <form asp-action="CompleteTask" asp-controller="Task" method="post" class="d-inline">
+                                    <input type="hidden" name="taskId" value="@task.ID" />
+                                    <button type="submit" class="btn btn-outline-success btn-sm">
+                                        <i class="bi bi-check-circle"></i> Позначити як виконане
+                                    </button>
+                                </form>
+                            }
+                        </div>
                     </li>
                 }
             </ul>
