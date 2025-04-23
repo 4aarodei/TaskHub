@@ -10,11 +10,9 @@ namespace TaskHub.Controllers
 
         private readonly UserService _userService;
         private readonly TaskService _taskService;
-        private readonly TeamService _teamService;
 
-        public TaskController(UserService userService, TaskService taskService, TeamService teamService)
+        public TaskController(UserService userService, TaskService taskService)
         {
-            _teamService = teamService;
             _userService = userService;
             _taskService = taskService;
         }
@@ -39,12 +37,16 @@ namespace TaskHub.Controllers
             return View(model);
         }
 
-        [HttpGet]
+        [HttpPost]
         public async Task<IActionResult> Details(Guid taskId)
         {
+            var user = await _userService.GetCurrentUserAsync();
+
             var task = await _taskService.GetTaskByIdAsync(taskId);
             if (task == null)
                 return NotFound();
+
+            ViewData ["UserName"] = user.NormalizedUserName;
 
             return View(task);
         }
@@ -52,13 +54,7 @@ namespace TaskHub.Controllers
         [HttpPost]
         public async Task<IActionResult> CompleteTask(Guid taskId)
         {
-            var task = await _taskService.GetTaskByIdAsync(taskId);
-
-            if (task == null)
-                return NotFound();
-
-            task.IsComplete = true;
-            await _taskService.UpdateTaskAsync(task);
+            await _taskService.CompleteTaskWithSubtasksAsync(taskId);
 
             return RedirectToAction("Index");
         }
@@ -76,7 +72,7 @@ namespace TaskHub.Controllers
             return RedirectToAction("Index");
         }
 
-        [HttpGet]
+        [HttpPost]
         public async Task<IActionResult> TaskHistory(Guid userId)
         {
             var competedTasks = await _taskService.GetDoneTask(userId);

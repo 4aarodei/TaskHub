@@ -3,6 +3,7 @@ using TaskHub.Services;
 using TaskHub.Models;
 using TaskHub.Models.TaskViewModel;
 using TaskHub.Models.TeamViewModel;
+using System.Threading.Tasks;
 
 namespace TaskHub.Controllers;
 
@@ -40,7 +41,7 @@ public class TeamController : Controller
     }
 
     // GET: Task/Details/{id}
-    [HttpGet]
+    [HttpPost]
     public async Task<IActionResult> Index(Guid teamId)
     {
 
@@ -136,6 +137,19 @@ public class TeamController : Controller
         await _taskService.AssignTaskToUserAsync(taskId, user.Id);
 
         return RedirectToAction("Index", new { teamId = teamId });
+    }
+
+    public async Task<IActionResult> Details(Guid taskId)
+    {
+        var user = await _userService.GetCurrentUserAsync();
+
+        var task = await _taskService.GetTaskByIdAsync(taskId);
+        if (task == null)
+            return NotFound();
+
+        ViewData["UserName"] = user.NormalizedUserName;
+
+        return View(task);
     }
 
 }

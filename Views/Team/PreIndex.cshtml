@@ -14,7 +14,7 @@
                         <p class="card-text">Created: @team.CreatedDate.ToString("dd MMM yyyy")</p>
                         <p class="card-text">Members: @team.Users.Count</p>
 
-                        <form id="teamId" method="get" action="Index">
+                        <form id="teamId" method="post" action="Index">
                             <input type="hidden" name="teamId" value="@team.ID" />
                             <button type="submit" class="btn btn-warning w-100">More</button>
                         </form>
