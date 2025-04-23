@@ -52,13 +52,26 @@ namespace TaskHub.Controllers
         [HttpPost]
         public async Task<IActionResult> CompleteTask(Guid taskId)
         {
-            var task  = await _taskService.GetTaskByIdAsync(taskId);
+            var task = await _taskService.GetTaskByIdAsync(taskId);
 
             if (task == null)
                 return NotFound();
 
             task.IsComplete = true;
             await _taskService.UpdateTaskAsync(task);
+
+            return RedirectToAction("Index");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> CompleteSubtask(Guid taskId, Guid subtaskId)
+        {
+            var task = await _taskService.GetTaskByIdAsync(taskId);
+
+            if (task == null)
+                return NotFound();
+
+            await _taskService.CompletSubtask(subtaskId, task);
 
             return RedirectToAction("Index");
         }

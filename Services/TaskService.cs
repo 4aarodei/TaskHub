@@ -1,5 +1,5 @@
-﻿using global::TaskHub.Data;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
+using TaskHub.Data;
 using TaskHub.Models;
 
 namespace TaskHub.Services
@@ -11,6 +11,17 @@ namespace TaskHub.Services
         public TaskService(ApplicationDbContext context)
         {
             _context = context;
+        }
+
+        public async Task<bool> CompletSubtask(Guid subtaskID, TaskModel task)
+        {
+            var subtask = task.Subtasks.FirstOrDefault(s => s.Id == subtaskID);
+            if (subtask == null) return false;
+
+            subtask.IsComplete = true;
+            await _context.SaveChangesAsync();
+
+            return true;
         }
 
         public async Task<List<TaskModel>> GetDoneTask(Guid userId)
@@ -27,8 +38,10 @@ namespace TaskHub.Services
         {
             return await _context.Tasks
                 .Where(t => t.UserId == userId && !t.IsComplete)
+                .Include(t => t.Subtasks) // <-- це додає сабтаски до кожного таску
                 .ToListAsync();
         }
+
         public async Task AssignTaskToUserAsync(Guid taskId, string userId)
         {
             var task = await _context.Tasks.FindAsync(taskId);

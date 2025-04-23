@@ -17,29 +17,56 @@
             <ul class="list-group list-group-flush">
                 @foreach (var task in Model.UserTask)
                 {
-                    <li class="list-group-item d-flex justify-content-between flex-column flex-md-row align-items-start align-items-md-center gap-2">
-                        <div>
-                            <strong>@task.Title</strong><br />
-                            <small class="text-muted">Status: @(task.IsComplete ? "✅ Completed" : "🕓 Pending")</small>
-                        </div>
-                        <div class="d-flex gap-2">
-                            <form asp-action="Details" asp-controller="Task" method="get" class="d-inline">
-                                <input type="hidden" name="taskId" value="@task.ID" />
-                                <button type="submit" class="btn btn-outline-primary btn-sm">
-                                    <i class="bi bi-info-circle"></i> Деталі
-                                </button>
-                            </form>
-
-                            @if (!task.IsComplete)
-                            {
-                                <form asp-action="CompleteTask" asp-controller="Task" method="post" class="d-inline">
+                    <li class="list-group-item d-flex flex-column gap-2">
+                        <div class="d-flex justify-content-between flex-column flex-md-row align-items-start align-items-md-center">
+                            <div>
+                                <strong>@task.Title</strong><br />
+                                <small class="text-muted">Status: @(task.IsComplete ? "✅ Completed" : "🕓 Pending")</small>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <form asp-action="Details" asp-controller="Task" method="get" class="d-inline">
                                     <input type="hidden" name="taskId" value="@task.ID" />
-                                    <button type="submit" class="btn btn-outline-success btn-sm">
-                                        <i class="bi bi-check-circle"></i> Позначити як виконане
+                                    <button type="submit" class="btn btn-outline-primary btn-sm">
+                                        <i class="bi bi-info-circle"></i> Деталі
                                     </button>
                                 </form>
-                            }
+
+                                @if (!task.IsComplete)
+                                {
+                                    <form asp-action="CompleteTask" asp-controller="Task" method="post" class="d-inline">
+                                        <input type="hidden" name="taskId" value="@task.ID" />
+                                        <button type="submit" class="btn btn-outline-success btn-sm">
+                                            <i class="bi bi-check-circle"></i> Позначити як виконане
+                                        </button>
+                                    </form>
+                                }
+                            </div>
                         </div>
+
+                        @if (task.Subtasks != null && task.Subtasks.Any())
+                        {
+                            <ul class="list-group mt-2 ms-3">
+                                @foreach (var subtask in task.Subtasks)
+                                {
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span>
+                                            @subtask.Title
+                                            <small class="text-muted">(@(subtask.IsComplete ? "✅" : "🕓"))</small>
+                                        </span>
+                                        @if (!subtask.IsComplete)
+                                        {
+                                            <form asp-action="CompleteSubTask" asp-controller="Task" method="post" class="d-inline">
+                                                <input type="hidden" name="subtaskId" value="@subtask.Id" />
+                                                <input type="hidden" name="taskId" value="@task.ID" />
+                                                <button type="submit" class="btn btn-outline-success btn-sm">
+                                                    <i class="bi bi-check-circle"></i> Виконано
+                                                </button>
+                                            </form>
+                                        }
+                                    </li>
+                                }
+                            </ul>
+                        }
                     </li>
                 }
             </ul>

@@ -7,7 +7,8 @@
         public string Description { get; set; }
         public bool IsComplete { get; set; } = false;
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow; // Використовуємо UTC для створення дати
-        public DateTime Deadline { get; set; } 
+        public DateTime Deadline { get; set; }
+        public List<Subtasks>? Subtasks { get; set; } = new List<Subtasks>();
 
         // **Правильний зв’язок**
         public string? UserId { get; set; } // Це зовнішній ключ (FK)

@@ -77,7 +77,7 @@ public class TeamController : Controller
             TeamId = team.ID,
             Team = team,
             CreatedDate = DateTime.UtcNow,
-            Deadline = DateTime.UtcNow.AddDays(7) // Дедлайн по умолчанию через 7 дней
+            Deadline = DateTime.UtcNow.AddDays(3) // Дедлайн по умолчанию через 7 дней
         };
 
         ViewBag.UsersOnTeam = usersOnTeam;
@@ -90,12 +90,34 @@ public class TeamController : Controller
     {
         var team = await _teamService.GetTeamByIdAsync(task.TeamId);
 
+        foreach (var subtask in task.Subtasks)
+        {
+            subtask.Id = Guid.NewGuid();
+            subtask.TaskModel = task; // Заполняем TaskModel
+            subtask.TaskId = task.ID;
+        }
+
         task.Team = team;
 
+        // Проверяем ModelState после заполнения TaskModel
         if (!ModelState.IsValid)
         {
             var usersOnTeam = await _teamService.GetUsersForTeamAsync(task.TeamId);
             ViewBag.UsersOnTeam = usersOnTeam;
+
+            foreach (var state in ModelState)
+            {
+                if (state.Value.Errors.Count > 0)
+                {
+                    foreach (var error in state.Value.Errors)
+                    {
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.WriteLine($"Поле: {state.Key}, Помилка: {error.ErrorMessage}");
+                        Console.ResetColor();
+                    }
+                }
+            }
+
             return View(task);
         }
 

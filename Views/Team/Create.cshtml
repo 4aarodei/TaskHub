@@ -11,7 +11,6 @@
                     <h1 class="card-title text-center mb-4 text-primary">Create New Task</h1>
 
                     <form asp-action="Create" method="post" novalidate>
-                        <!-- Hidden Fields -->
                         <input type="hidden" name="TeamId" value="@Model.TeamId" />
                         <input type="hidden" name="Team" value="@Model.Team" />
 
@@ -48,6 +47,32 @@
                             <div class="text-danger small" asp-validation-for="Deadline"></div>
                         </div>
 
+                        <!-- Subtasks -->
+                        <div class="mb-4">
+                            <label class="form-label">Subtasks</label>
+                            <div id="subtasks-container">
+                                @for (int i = 0; i < Model.Subtasks?.Count; i++)
+                                {
+                                    <div class="subtask-item border rounded p-3 mb-3 bg-light">
+                                        <input type="hidden" name="Subtasks[@i].TaskId" value="@Model.TeamId" />
+                                        <input type="hidden" name="Subtasks[@i].OrderIndex" value="@(i + 1)" />
+                                        <div class="mb-2">
+                                            <input name="Subtasks[@i].Title" class="form-control" placeholder="Subtask title" />
+                                        </div>
+                                        <div class="mb-2">
+                                            <textarea name="Subtasks[@i].Description" class="form-control" placeholder="Subtask description"></textarea>
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="checkbox" name="Subtasks[@i].IsComplete" />
+                                            <label class="form-check-label">Is Complete</label>
+                                        </div>
+                                        <button type="button" class="btn btn-danger remove-subtask">× Remove</button>
+                                    </div>
+                                }
+                            </div>
+                            <button type="button" class="btn btn-outline-primary mt-2" id="add-subtask">+ Add Subtask</button>
+                        </div>
+
                         <!-- Submit Button -->
                         <div class="d-flex justify-content-end">
                             <button type="submit" class="btn btn-primary px-4 py-2">Create Task</button>
@@ -58,3 +83,55 @@
         </div>
     </div>
 </section>
+
+@section Scripts {
+    <script>
+        const container = document.getElementById('subtasks-container');
+        const addBtn = document.getElementById('add-subtask');
+
+        addBtn.addEventListener('click', () => {
+            const index = container.children.length;
+
+            const div = document.createElement('div');
+            div.className = 'subtask-item border rounded p-3 mb-3 bg-light';
+            div.innerHTML = `
+                <input type="hidden" name="Subtasks[${index}].TaskId" value="@Model.TeamId" />
+                <input type="hidden" name="Subtasks[${index}].OrderIndex" value="${index + 1}" />
+                <div class="mb-2">
+                    <input name="Subtasks[${index}].Title" class="form-control" placeholder="Subtask title" />
+                </div>
+                <div class="mb-2">
+                    <textarea name="Subtasks[${index}].Description" class="form-control" placeholder="Subtask description"></textarea>
+                </div>
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" name="Subtasks[${index}].IsComplete" />
+                    <label class="form-check-label">Is Complete</label>
+                </div>
+                <button type="button" class="btn btn-danger remove-subtask">× Remove</button>
+            `;
+            container.appendChild(div);
+        });
+
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('remove-subtask')) {
+                e.target.closest('.subtask-item').remove();
+                const items = document.querySelectorAll('.subtask-item');
+                items.forEach((item, i) => {
+                    item.querySelector('input[name$=".TaskId"]').name = `Subtasks[${i}].TaskId`;
+                    item.querySelector('input[name$=".Title"]').name = `Subtasks[${i}].Title`;
+                    item.querySelector('textarea[name$=".Description"]').name = `Subtasks[${i}].Description`;
+                    item.querySelector('input[type="checkbox"]').name = `Subtasks[${i}].IsComplete`;
+
+                    let orderInput = item.querySelector('input[name$=".OrderIndex"]');
+                    if (!orderInput) {
+                        orderInput = document.createElement('input');
+                        orderInput.type = 'hidden';
+                        item.appendChild(orderInput);
+                    }
+                    orderInput.name = `Subtasks[${i}].OrderIndex`;
+                    orderInput.value = i + 1;
+                });
+            }
+        });
+    </script>
+}

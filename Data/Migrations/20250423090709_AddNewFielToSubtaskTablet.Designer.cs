@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TaskHub.Data;
 
@@ -11,9 +12,11 @@ using TaskHub.Data;
 namespace TaskHub.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250423090709_AddNewFielToSubtaskTablet")]
+    partial class AddNewFielToSubtaskTablet
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -256,7 +259,7 @@ namespace TaskHub.Data.Migrations
 
                     b.HasIndex("TaskId");
 
-                    b.ToTable("Subtasks", (string)null);
+                    b.ToTable("Subtasks");
                 });
 
             modelBuilder.Entity("TaskHub.Models.TaskModel", b =>
@@ -294,7 +297,7 @@ namespace TaskHub.Data.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Tasks", (string)null);
+                    b.ToTable("Tasks");
                 });
 
             modelBuilder.Entity("TaskHub.Models.TeamInvite", b =>
@@ -311,7 +314,7 @@ namespace TaskHub.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("TeamInvites", (string)null);
+                    b.ToTable("TeamInvites");
                 });
 
             modelBuilder.Entity("TaskHub.Models.TeamModel", b =>
@@ -329,7 +332,7 @@ namespace TaskHub.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("Teams", (string)null);
+                    b.ToTable("Teams");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
