@@ -1,0 +1,122 @@
+﻿@model TaskHub.Models.Playlist.StationDaySelectionViewModel
+@using System.Globalization
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+
+@{
+    ViewData["Title"] = "Станції та дати";
+    var daysCount = (Model.EndDate - Model.StartDate).Days + 1;
+    var dates = Enumerable.Range(0, daysCount)
+                          .Select(offset => Model.StartDate.AddDays(offset))
+                          .ToList();
+}
+
+<!-- Стилі -->
+<style>
+    .cell-checkbox {
+        display: none;
+    }
+
+    .cell-label {
+        display: block;
+        width: 100%;
+        height: 100%;
+        padding: 10px;
+        cursor: pointer;
+        background-color: #f8f9fa;
+        border-radius: 4px;
+        transition: background-color 0.2s;
+        text-align: center;
+    }
+
+    .cell-checkbox:checked + .cell-label {
+        background-color: #0d6efd;
+        color: white;
+        font-weight: bold;
+    }
+
+    td {
+        padding: 0 !important;
+        vertical-align: middle;
+    }
+
+    /* Виділення заголовку з датами */
+    th.date-header {
+        background-color: #cce5ff; /* блакитний фон */
+        color: #004085; /* темний колір тексту */
+        font-weight: bold;
+    }
+
+    /* Виділення вихідних днів */
+    .weekend {
+        background-color: #f0f8ff; /* Світло-блакитний фон для вихідних */
+        font-weight: bold;
+    }
+</style>
+
+<div class="container mt-4">
+    <h2 class="mb-4">Вибір днів для станцій</h2>
+
+    <!-- Форма для фільтрації дат -->
+    <form asp-action="Index" method="get" class="row g-3 mb-4">
+        <div class="col-md-4">
+            <label for="startDate" class="form-label">Початкова дата</label>
+            <input type="date" id="startDate" name="startDate" class="form-control" value="@Model.StartDate.ToString("yyyy-MM-dd")" onchange="this.form.submit()" />
+        </div>
+        <div class="col-md-4">
+            <label for="endDate" class="form-label">Кінцева дата</label>
+            <input type="date" id="endDate" name="endDate" class="form-control" value="@Model.EndDate.ToString("yyyy-MM-dd")" onchange="this.form.submit()" />
+        </div>
+    </form>
+
+    <!-- Основна форма -->
+    <form asp-action="SaveSelection" method="post">
+        <input type="hidden" name="StartDate" value="@Model.StartDate.ToString("yyyy-MM-dd")" />
+        <input type="hidden" name="EndDate" value="@Model.EndDate.ToString("yyyy-MM-dd")" />
+
+        <!-- Обгортка для прокрутки -->
+        <div style="overflow-x: auto; width: 100%;">
+            <table class="table table-bordered" style="min-width: max-content;">
+                <thead>
+                    <tr>
+                        <th>Станція</th>
+                        @foreach (var date in dates)
+                        {
+                            <th class="text-center date-header">@date.ToString("dd.MM", CultureInfo.InvariantCulture)</th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (int i = 0; i < Model.Stations.Count; i++)
+                    {
+                        var station = Model.Stations[i];
+                        <tr>
+                            <td>@station.StationName</td>
+                            @foreach (var date in dates)
+                            {
+                                var formattedDate = date.ToString("yyyy-MM-dd");
+                                var checkboxId = $"chk_{i}_{date:yyyyMMdd}";
+                                bool isChecked = station.SelectedDates.Contains(formattedDate);
+
+                                // Додаємо клас "weekend" для вихідних днів (субота і неділя)
+                                var isWeekend = date.DayOfWeek == DayOfWeek.Saturday || date.DayOfWeek == DayOfWeek.Sunday;
+                                var weekendClass = isWeekend ? "weekend" : "";
+
+                                <td class="text-center @weekendClass">
+                                    <input type="checkbox"
+                                           class="cell-checkbox"
+                                           id="@checkboxId"
+                                           name="Stations[@i].SelectedDates"
+                                           value="@formattedDate"
+                                    @(isChecked ? "checked" : "") />
+                                    <label class="cell-label" for="@checkboxId">--</label>
+                                </td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <button type="submit" class="btn btn-success mt-3">Зберегти вибір</button>
+    </form>
+</div>

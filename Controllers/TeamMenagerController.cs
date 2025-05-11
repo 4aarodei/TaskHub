@@ -14,65 +14,16 @@ namespace TaskHub.Controllers
 {
     public class TeamMenagerController : Controller
     {
-        private readonly ApplicationDbContext _context;
-        private readonly UserService _userService;
-        private readonly TaskService _taskService;
-        private readonly TeamService _teamService;
         private readonly InviteService _inviteService;
+        private readonly TeamService _teamService;
+        private readonly UserService _userService;
 
-        public TeamMenagerController(ApplicationDbContext context, TaskService taskService, TeamService teamService,
-            UserService userService, InviteService inviteService)
+        public TeamMenagerController(InviteService inviteService, TeamService teamService, UserService userService)
         {
-            _context = context;
-            _taskService = taskService;
+
+            _inviteService = inviteService;
             _teamService = teamService;
             _userService = userService;
-            _inviteService = inviteService;
-        }
-
-        // GET: Team
-        public async Task<IActionResult> Index()
-        {
-            return View(await _context.Teams.ToListAsync());
-        }
-
-        // GET: Team/TeamCreate
-        [HttpGet]
-        public IActionResult TeamCreate()
-        {
-            return View();
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> TeamCreate([Bind("ID,Name,CreatedDate")] TeamModel teamModel)
-        {
-            if (ModelState.IsValid)
-            {
-                teamModel.ID = Guid.NewGuid();
-                _context.Add(teamModel);
-                await _context.SaveChangesAsync();
-                return RedirectToAction("Index");
-            }
-
-            return View(teamModel);
-        }
-
-        public async Task<IActionResult> Details(Guid teamId)
-        {
-            if (teamId != Guid.Empty)
-            {
-                var team = await _context.Teams
-                    .Include(t => t.Users)
-                    .Include(t => t.Tasks)
-                    .FirstOrDefaultAsync(t => t.ID == teamId);
-
-                if (team == null)
-                {
-                    return NotFound("Team not found");
-                }
-                return View(team);
-            }
-            return NotFound("Team not found");
         }
 
         [HttpPost("generate-invite")]
@@ -122,5 +73,75 @@ namespace TaskHub.Controllers
                 return Unauthorized(ex.Message);
             }
         }
+
+        // GET: Team
+        public async Task<IActionResult> Index()
+        {
+            var user = await _userService.GetCurrentUserAsync();
+
+            return View(await _teamService.GetAllTeamsForUserAsync(user.Id));
+        }
+
+        // GET: Team/TeamCreate
+        [HttpGet]
+        public IActionResult TeamCreate()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> TeamCreate([Bind("ID,Name,CreatedDate")] TeamModel teamModel)
+        {
+            if (ModelState.IsValid)
+            {
+               await _teamService.CreateTeamAsync(teamModel.Name);
+                return RedirectToAction("Index");
+            }
+
+            return View(teamModel);
+        }
+
+        public async Task<IActionResult> Details(Guid teamId)
+        {
+
+            var team = await _teamService.GetTeamByIdAsync(teamId);
+
+            if (team == null)
+            {
+                return NotFound("Team not found");
+            }
+            return View(team);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Edit(Guid teamId)
+        {
+            if (teamId == Guid.Empty)
+            {
+                return NotFound("Team not found");
+            }
+            var team = await _teamService.GetTeamByIdAsync(teamId);
+
+            if (team == null)
+            {
+                return NotFound("Team not found");
+            }
+            return View(team);
+        }
+
+        //[HttpPost]
+        //public async Task<IActionResult> Edit(TeamModel teamModel)
+        //{
+        //    if (ModelState.IsValid)
+        //    {
+        //        _teamService.
+        //        await _context.SaveChangesAsync();
+
+        //        return RedirectToAction("Index");
+        //    }
+
+        //    return View(teamModel);
+        //}
+
     }
 }
