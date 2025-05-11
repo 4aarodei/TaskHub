@@ -49,5 +49,12 @@ namespace TaskHub.Services
 
             return team?.Users ?? new List<AppUser>();
         }
+
+        //public async Task<bool> UpdateTeam()
+        //{
+           
+        //    _context.Teams.Update()
+
+        //}
     }
 }
