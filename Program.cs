@@ -4,6 +4,7 @@ using TaskHub.Controllers;
 using TaskHub.Data;
 using TaskHub.Models;
 using TaskHub.Services;
+using TaskHub.Services.PlayListServices;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,6 +26,7 @@ builder.Services.AddScoped<InviteService>();
 builder.Services.AddHttpContextAccessor();
 //playList
 builder.Services.AddScoped<IWS_Service, FakeWS_Service>();
+builder.Services.AddScoped<PlaylistService>();
 
 
 var app = builder.Build();

@@ -3,14 +3,13 @@
 @using Microsoft.AspNetCore.Mvc.TagHelpers
 
 @{
-    ViewData["Title"] = "Станції та дати";
-    var daysCount = (Model.EndDate - Model.StartDate).Days + 1;
-    var dates = Enumerable.Range(0, daysCount)
-                          .Select(offset => Model.StartDate.AddDays(offset))
-                          .ToList();
+ViewData["Title"] = "Станції та дати";
+var daysCount = (Model.EndDate - Model.StartDate).Days + 1;
+var dates = Enumerable.Range(0, daysCount)
+.Select(offset => Model.StartDate.AddDays(offset))
+.ToList();
 }
 
-<!-- Стилі -->
 <style>
     .cell-checkbox {
         display: none;
@@ -39,16 +38,14 @@
         vertical-align: middle;
     }
 
-    /* Виділення заголовку з датами */
     th.date-header {
-        background-color: #cce5ff; /* блакитний фон */
-        color: #004085; /* темний колір тексту */
+        background-color: #cce5ff;
+        color: #004085;
         font-weight: bold;
     }
 
-    /* Виділення вихідних днів */
     .weekend {
-        background-color: #f0f8ff; /* Світло-блакитний фон для вихідних */
+        background-color: #f0f8ff;
         font-weight: bold;
     }
 </style>
@@ -56,7 +53,6 @@
 <div class="container mt-4">
     <h2 class="mb-4">Вибір днів для станцій</h2>
 
-    <!-- Форма для фільтрації дат -->
     <form asp-action="Index" method="get" class="row g-3 mb-4">
         <div class="col-md-4">
             <label for="startDate" class="form-label">Початкова дата</label>
@@ -68,51 +64,51 @@
         </div>
     </form>
 
-    <!-- Основна форма -->
     <form asp-action="SaveSelection" method="post">
         <input type="hidden" name="StartDate" value="@Model.StartDate.ToString("yyyy-MM-dd")" />
         <input type="hidden" name="EndDate" value="@Model.EndDate.ToString("yyyy-MM-dd")" />
 
-        <!-- Обгортка для прокрутки -->
         <div style="overflow-x: auto; width: 100%;">
             <table class="table table-bordered" style="min-width: max-content;">
                 <thead>
-                    <tr>
-                        <th>Станція</th>
-                        @foreach (var date in dates)
-                        {
-                            <th class="text-center date-header">@date.ToString("dd.MM", CultureInfo.InvariantCulture)</th>
-                        }
-                    </tr>
+                <tr>
+                    <th>Станція</th>
+                    @foreach (var date in dates)
+                    {
+                    <th class="text-center date-header">@date.ToString("dd.MM", CultureInfo.InvariantCulture)</th>
+                    }
+                </tr>
                 </thead>
                 <tbody>
-                    @for (int i = 0; i < Model.Stations.Count; i++)
+                @for (int i = 0; i < Model.Stations.Count; i++)
+                {
+                var station = Model.Stations[i];
+                <tr>
+                    <td>
+                        @station.StationName
+                        <input type="hidden" name="Stations[@i].WorkStationID" value="@station.WorkStationID" />
+                        <input type="hidden" name="Stations[@i].StationName" value="@station.StationName" />
+                    </td>
+                    @foreach (var date in dates)
                     {
-                        var station = Model.Stations[i];
-                        <tr>
-                            <td>@station.StationName</td>
-                            @foreach (var date in dates)
-                            {
-                                var formattedDate = date.ToString("yyyy-MM-dd");
-                                var checkboxId = $"chk_{i}_{date:yyyyMMdd}";
-                                bool isChecked = station.SelectedDates.Contains(formattedDate);
+                    var formattedDate = date.ToString("yyyy-MM-dd");
+                    var checkboxId = $"chk_{i}_{date:yyyyMMdd}";
+                    var isChecked = station.SelectedDates.Contains(date.Date);
+                    var isWeekend = date.DayOfWeek == DayOfWeek.Saturday || date.DayOfWeek == DayOfWeek.Sunday;
+                    var weekendClass = isWeekend ? "weekend" : "";
 
-                                // Додаємо клас "weekend" для вихідних днів (субота і неділя)
-                                var isWeekend = date.DayOfWeek == DayOfWeek.Saturday || date.DayOfWeek == DayOfWeek.Sunday;
-                                var weekendClass = isWeekend ? "weekend" : "";
-
-                                <td class="text-center @weekendClass">
-                                    <input type="checkbox"
-                                           class="cell-checkbox"
-                                           id="@checkboxId"
-                                           name="Stations[@i].SelectedDates"
-                                           value="@formattedDate"
-                                    @(isChecked ? "checked" : "") />
-                                    <label class="cell-label" for="@checkboxId">--</label>
-                                </td>
-                            }
-                        </tr>
+                    <td class="text-center @weekendClass">
+                        <input type="checkbox"
+                               class="cell-checkbox"
+                               id="@checkboxId"
+                               name="Stations[@i].SelectedDates"
+                               value="@formattedDate"
+                               @(isChecked ? "checked" : "") />
+                        <label class="cell-label" for="@checkboxId">--</label>
+                    </td>
                     }
+                </tr>
+                }
                 </tbody>
             </table>
         </div>

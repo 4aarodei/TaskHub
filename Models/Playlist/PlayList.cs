@@ -1,96 +1,64 @@
-﻿using Microsoft.VisualStudio.TextTemplating;
+﻿using System;
+using System.Collections.Generic;
 
 namespace TaskHub.Models.Playlist
 {
     public class PlayList
     {
+        // Константи назв полів
+        public const string WORKSTATION_ID_FIELD = "WorkstationID";
+        public const string DATE_FIELD = "Date";
+        public const string UPDATED_FIELD = "Updated";
+        public const string LAST_RELATION_CHANGE_FIELD = "LastRelationChange";
+        public const string SOUND_VOLUME_FIELD = "SoundVolume";
+        public const string PLAYED_FIELD = "Played";
+
+        // Властивості
         public int ID { get; set; }
 
-        private IList<PlayListItem> items = new List<PlayListItem>();
-
-        public IList<PlayListItem> Items
-        {
-            get { return items; }
-            set { items = value; }
-        }
-
-        public const string WORKSTATION_ID_FIELD = "WorkstationID";
         public int WorkStationID { get; set; }
-
-        public const string DATE_FIELD = "Date";
 
         public DateTime Date { get; set; }
 
-        public const string UPDATED_FIELD = "Updated";
         public DateTime Updated { get; set; }
-
-        public const string LAST_RELATION_CHANGE_FIELD = "LastRelationChange";
 
         public DateTime? LastRelationChange { get; set; }
 
-        public const string SOUND_VOLUME_FIELD = "SoundVolume";
-
         public string SoundVolume { get; set; }
 
-        //public List<Pair<int, int>> SoundVolumes
-        //{
-        //    get
-        //    {
-        //        return StringHelper.StringToSoundVolumes(SoundVolume);
-        //    }
-        //    set
-        //    {
-        //        SoundVolume = StringHelper.SoundVolumesToString(value);
-        //    }
-        //}
-
-        public const string PLAYED_FIELD = "Played";
         public bool Played { get; set; }
 
-        public bool NeedToRegenerate
-        {
-            get
-            {
-                return (LastRelationChange.HasValue && LastRelationChange.Value > Updated);
-            }
-        }
-
+        public IList<PlayListItem> Items { get; set; } = new List<PlayListItem>();
     }
 
     public class PlayListItem
     {
-        public const string ID_FIELD = "ID";
-
-        public int ID { get; set; }
-
+        // navigation property
         private PlayList playList;
         public PlayList PlayList
         {
-            get
-            {
-                return playList;
-            }
+            get => playList;
             set
             {
                 playList = value;
-                PlayListID = playList.ID;
+                PlayListID = playList?.ID ?? 0;
             }
         }
-
+        // Константи назв полів
+        public const string ID_FIELD = "ID";
         public const string PLAY_LIST_ID_FIELD = "PlayListID";
-        public int PlayListID { get; set; }
-
         public const string CLIP_ID_FIELD = "ClipID";
-
-        public int ClipID { get; set; }
-
         public const string START_FIELD = "Start";
-
-        public double Start { get; set; }
-
         public const string START_POSITION_FIELD = "StartPosition";
+
+        // Властивості
+        public int ID { get; set; }
+        public int PlayListID { get; set; }
+        public int ClipID { get; set; }
+        public double Start { get; set; }
         public double StartPosition { get; set; }
 
+        // Фабричний метод
         public static PlayListItem Create(int id, PlayList playList, int clipId, double start, double startPosition)
         {
             return new PlayListItem
