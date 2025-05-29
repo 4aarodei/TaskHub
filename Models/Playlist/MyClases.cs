@@ -20,5 +20,23 @@ public class StationSelectionItem
 
     // Список обраних днів (дата у форматі yyyy-MM-dd)
     public List<DateTime> SelectedDates { get; set; } = new();
-} // міститься в моделі зверху
+} 
+ // father classes
+public class PlayListQuery
+{
+    public int WorkStationId { get; private set; }
+    public DateTime Date { get; private set; }
+
+    public PlayListQuery(int wsId, DateTime date)
+    {
+        WorkStationId = wsId;
+        Date = date;
+    }
+}
+
+public class BuildPlayListResult
+{
+    public PlayListQuery Query { get; set; }
+    public PlayList PlayList { get; set; }
+}
 

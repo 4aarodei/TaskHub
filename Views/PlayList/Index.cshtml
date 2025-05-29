@@ -1,6 +1,5 @@
 ﻿@model TaskHub.Models.Playlist.StationDaySelectionViewModel
 @using System.Globalization
-@using Microsoft.AspNetCore.Mvc.TagHelpers
 
 @{
 ViewData["Title"] = "Станції та дати";
@@ -11,6 +10,7 @@ var dates = Enumerable.Range(0, daysCount)
 }
 
 <style>
+    /* Стилі залишилися ті самі */
     .cell-checkbox {
         display: none;
     }
@@ -42,11 +42,40 @@ var dates = Enumerable.Range(0, daysCount)
         background-color: #cce5ff;
         color: #004085;
         font-weight: bold;
+        text-align: center;
     }
 
-    .weekend {
-        background-color: #f0f8ff;
+    th.weekend-header {
+        background-color: #ffd6d6; /* Яскраво-рожевий для вихідних */
+        color: #8b0000;
         font-weight: bold;
+    }
+
+    td.weekend {
+        background-color: #ffecec;
+    }
+
+    /* Нові стилі для результатів */
+    .alert {
+        padding: 15px;
+        margin-bottom: 20px;
+        border: 1px solid transparent;
+        border-radius: 4px;
+    }
+    .alert-success {
+        color: #3c763d;
+        background-color: #dff0d8;
+        border-color: #d6e9c6;
+    }
+    .alert-danger {
+        color: #a94442;
+        background-color: #f2dede;
+        border-color: #ebccd1;
+    }
+    .alert-info {
+        color: #31708f;
+        background-color: #d9edf7;
+        border-color: #bce8f1;
     }
 </style>
 
@@ -56,17 +85,17 @@ var dates = Enumerable.Range(0, daysCount)
     <form asp-action="Index" method="get" class="row g-3 mb-4">
         <div class="col-md-4">
             <label for="startDate" class="form-label">Початкова дата</label>
-            <input type="date" id="startDate" name="startDate" class="form-control" value="@Model.StartDate.ToString("yyyy-MM-dd")" onchange="this.form.submit()" />
+            <input type="date" id="startDate" name="startDate" class="form-control" value="@Model.StartDate.ToString("yyyy-MM-dd")" onchange="this.form.submit()"/>
         </div>
         <div class="col-md-4">
             <label for="endDate" class="form-label">Кінцева дата</label>
-            <input type="date" id="endDate" name="endDate" class="form-control" value="@Model.EndDate.ToString("yyyy-MM-dd")" onchange="this.form.submit()" />
+            <input type="date" id="endDate" name="endDate" class="form-control" value="@Model.EndDate.ToString("yyyy-MM-dd")" onchange="this.form.submit()"/>
         </div>
     </form>
 
-    <form asp-action="SaveSelection" method="post">
-        <input type="hidden" name="StartDate" value="@Model.StartDate.ToString("yyyy-MM-dd")" />
-        <input type="hidden" name="EndDate" value="@Model.EndDate.ToString("yyyy-MM-dd")" />
+    <form id="playlistSelectionForm">
+        <input type="hidden" name="StartDate" value="@Model.StartDate.ToString("yyyy-MM-dd")" id="formStartDate"/>
+        <input type="hidden" name="EndDate" value="@Model.EndDate.ToString("yyyy-MM-dd")" id="formEndDate"/>
 
         <div style="overflow-x: auto; width: 100%;">
             <table class="table table-bordered" style="min-width: max-content;">
@@ -75,19 +104,22 @@ var dates = Enumerable.Range(0, daysCount)
                     <th>Станція</th>
                     @foreach (var date in dates)
                     {
-                    <th class="text-center date-header">@date.ToString("dd.MM", CultureInfo.InvariantCulture)</th>
+                    var isWeekend = date.DayOfWeek == DayOfWeek.Saturday || date.DayOfWeek == DayOfWeek.Sunday;
+                    var weekendClass = isWeekend ? "weekend-header" : "date-header";
+                    <th class="@weekendClass">@date.ToString("dd.MM", CultureInfo.InvariantCulture)</th>
                     }
                 </tr>
                 </thead>
                 <tbody>
+                @* Додаємо клас `station-row` до рядка для зручності доступу з JS *@
                 @for (int i = 0; i < Model.Stations.Count; i++)
                 {
                 var station = Model.Stations[i];
-                <tr>
-                    <td>
+                <tr class="station-row">
+                    <td class="station-name-cell" data-index="@i">
                         @station.StationName
-                        <input type="hidden" name="Stations[@i].WorkStationID" value="@station.WorkStationID" />
-                        <input type="hidden" name="Stations[@i].StationName" value="@station.StationName" />
+                        <input type="hidden" class="station-id-input" value="@station.WorkStationID"/>
+                        <input type="hidden" class="station-name-input" value="@station.StationName"/>
                     </td>
                     @foreach (var date in dates)
                     {
@@ -101,9 +133,9 @@ var dates = Enumerable.Range(0, daysCount)
                         <input type="checkbox"
                                class="cell-checkbox"
                                id="@checkboxId"
-                               name="Stations[@i].SelectedDates"
-                               value="@formattedDate"
-                               @(isChecked ? "checked" : "") />
+                               data-station-id="@station.WorkStationID"
+                               data-date="@formattedDate"
+                               @(isChecked ? "checked" : "")/>
                         <label class="cell-label" for="@checkboxId">--</label>
                     </td>
                     }
@@ -113,6 +145,289 @@ var dates = Enumerable.Range(0, daysCount)
             </table>
         </div>
 
-        <button type="submit" class="btn btn-success mt-3">Зберегти вибір</button>
+        <button type="button" class="btn btn-success mt-3" onclick="generatePlaylists()">Згенерувати та зберегти (швидко)</button>
+        <button type="button" class="btn btn-info mt-3 ms-2" onclick="startBackgroundGeneration()">Запустити фонову генерацію</button>
     </form>
+
+    <div id="resultMessages" class="mt-4"></div>
+
+    @* HTML для прогрес-бару *@
+    <div id="progressContainer" class="mt-4" style="display: none;">
+        <h5>Прогрес генерації:</h5>
+        <div class="progress">
+            <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+        </div>
+        <p id="progressMessage" class="mt-2 text-muted"></p>
+    </div>
 </div>
+
+@section Scripts {
+@* Посилання на бібліотеку SignalR JavaScript *@
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM content loaded.");
+        // Логіка для вибору всіх дат по станції (змінено селектор)
+        const stationNameCells = document.querySelectorAll(".station-name-cell");
+        stationNameCells.forEach(cell => {
+            cell.addEventListener("click", function () {
+                console.log("Station name cell clicked.");
+                // Знаходимо рядок станції, до якої належить клітинка
+                const stationRow = this.closest('.station-row');
+                if (stationRow) {
+                    const checkboxes = stationRow.querySelectorAll('input[type="checkbox"].cell-checkbox');
+                    checkboxes.forEach(cb => cb.checked = true);
+                    console.log(`All checkboxes in station row '${this.textContent.trim()}' checked.`);
+                }
+            });
+        });
+
+        // Викликаємо підключення до SignalR при завантаженні сторінки
+        startSignalRConnection();
+    });
+
+    // Функція для збору даних з форми у форматі JavaScript-об'єкта
+    function collectModelData() {
+        console.log("Starting collectModelData()...");
+        const startDate = document.getElementById('formStartDate').value;
+        const endDate = document.getElementById('formEndDate').value;
+        const stationsData = [];
+
+        console.log(`Collecting data for StartDate: ${startDate}, EndDate: ${endDate}`);
+
+        document.querySelectorAll('.station-row').forEach(stationRow => {
+            const workStationID = parseInt(stationRow.querySelector('.station-id-input').value);
+            const stationName = stationRow.querySelector('.station-name-input').value;
+
+            const selectedDatesForStation = [];
+            stationRow.querySelectorAll('input[type="checkbox"].cell-checkbox:checked').forEach(checkbox => {
+                selectedDatesForStation.push(new Date(checkbox.dataset.date).toISOString());
+            });
+            console.log(`Station: ${stationName} (ID: ${workStationID}) selected dates: ${selectedDatesForStation.length} dates.`);
+
+            stationsData.push({
+                WorkStationID: workStationID,
+                StationName: stationName,
+                SelectedDates: selectedDatesForStation
+            });
+        });
+        const model = {
+            StartDate: startDate,
+            EndDate: endDate,
+            Stations: stationsData
+        };
+        console.log("collectModelData() finished. Model:", model);
+        return model;
+    }
+
+    // Функція для відображення повідомлень
+    function showMessage(message, type = 'info') {
+        const resultDiv = document.getElementById('resultMessages');
+        resultDiv.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+        console.log(`Displaying message (${type}): ${message}`);
+    }
+
+    // Функція для відправки даних до GeneratePlayLists (швидкий режим)
+    async function generatePlaylists() {
+        console.log("generatePlaylists() started.");
+        const model = collectModelData();
+        showMessage('Генерація плейлистів...', 'info');
+
+        try {
+            console.log("Sending request to /PlayList/GeneratePlayLists...");
+            console.log("Request Payload:", JSON.stringify(model));
+            const response = await fetch('/PlayList/GeneratePlayLists', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(model)
+            });
+
+            console.log("Response received for /PlayList/GeneratePlayLists.");
+            console.log("Response status:", response.status);
+            console.log("Content-Type header:", response.headers.get('content-type'));
+
+            const responseText = await response.text();
+            console.log("Full response text for GeneratePlayLists:", responseText);
+
+            let data = null;
+            const contentType = response.headers.get("content-type");
+
+            if (responseText && contentType && contentType.includes("application/json")) {
+                try {
+                    data = JSON.parse(responseText);
+                    console.log("Parsed JSON data for GeneratePlayLists:", data);
+                } catch (jsonError) {
+                    console.error("Error parsing JSON for GeneratePlayLists:", jsonError, "Received text:", responseText);
+                    showMessage(`Помилка: Сервер повернув невалідний JSON для швидкої генерації. Деталі в консолі.`, 'danger');
+                    return;
+                }
+            } else if (responseText) {
+                console.warn("Server returned non-JSON response for GeneratePlayLists. Received text:", responseText);
+                showMessage(`Помилка: Сервер повернув неочікуваний тип відповіді для швидкої генерації. Деталі в консолі.`, 'danger');
+                return;
+            }
+
+            if (response.ok && data && data.errcode === false) {
+                showMessage(data.message || 'Плейлисти успішно згенеровано та збережено!', 'success');
+            } else {
+                showMessage(`Помилка генерації: ${data?.message || 'Невідома помилка'} (Статус: ${response.status})`, 'danger');
+                console.error('Серверна помилка (GeneratePlayLists):', data, response);
+            }
+        } catch (error) {
+            showMessage(`Неочікувана помилка (GeneratePlayLists): ${error.message}`, 'danger');
+            console.error('Помилка AJAX (GeneratePlayLists):', error);
+        }
+    }
+
+    // --- SignalR Integration ---
+    let connection = null;
+    let currentConnectionId = null; // Зберігаємо ConnectionId для використання SignalR
+
+    async function startSignalRConnection() {
+        if (connection && connection.state === signalR.HubConnectionState.Connected) {
+            console.log("SignalR connection already established.");
+            return;
+        }
+
+        connection = new signalR.HubConnectionBuilder()
+            .withUrl("/progressHub") // URL вашого хаба
+            .withAutomaticReconnect() // Автоматичне перепідключення
+            .build();
+
+        // Обробник для отримання оновлень прогресу
+        connection.on("ReceiveProgressUpdate", (progress, message) => {
+            console.log(`Progress Update: ${progress}%, Message: ${message}`);
+            const progressBar = document.getElementById('progressBar');
+            const progressMessage = document.getElementById('progressMessage');
+
+            progressBar.style.width = `${progress}%`;
+            progressBar.setAttribute('aria-valuenow', progress);
+            progressBar.textContent = `${progress}%`;
+            progressMessage.textContent = message;
+
+            if (progress === 100) {
+                // Можна додати затримку або приховати прогрес-бар
+                setTimeout(() => {
+                    document.getElementById('progressContainer').style.display = 'none';
+                    showMessage("Генерація завершена!", "success"); // Фінальне повідомлення
+                }, 2000); // Затримка 2 секунди
+            }
+        });
+
+        connection.onclose(error => {
+            console.error("SignalR connection closed.", error);
+            showMessage("З'єднання з SignalR розірвано. Оновлення прогресу може бути недоступним.", "danger");
+        });
+
+        try {
+            await connection.start();
+            console.log("SignalR Connected! ConnectionId:", connection.connectionId);
+            currentConnectionId = connection.connectionId; // Зберігаємо актуальний ConnectionId
+        } catch (err) {
+            console.error("Error connecting to SignalR:", err);
+            showMessage("Помилка підключення до служби оновлень (SignalR). Прогрес не буде відображатися.", "danger");
+        }
+    }
+
+    // --- Функція для запуску фонової генерації (МОДИФІКОВАНО) ---
+    async function startBackgroundGeneration() {
+        console.log("startBackgroundGeneration() started.");
+        const startDate = document.getElementById('formStartDate').value;
+        const endDate = document.getElementById('formEndDate').value;
+
+        // Важливо: перевіряємо, чи SignalR підключено і чи є ConnectionId
+        if (connection && connection.state === signalR.HubConnectionState.Connected && connection.connectionId) {
+            currentConnectionId = connection.connectionId; // Використовуємо SignalR ConnectionId
+            console.log("Using SignalR ConnectionId:", currentConnectionId);
+        } else {
+            // Якщо SignalR не підключено, генеруємо випадковий ConnectionId
+            // і попереджаємо користувача, що прогрес не буде відображатися
+            currentConnectionId = 'client_' + Math.random().toString(36).substring(2, 15);
+            console.warn("SignalR not connected or connectionId not available, using generated ConnectionId:", currentConnectionId);
+            showMessage("SignalR не підключено або ідентифікатор з'єднання недоступний. Прогрес не буде відображатися.", "warning");
+        }
+
+        console.log(`Background generation params: StartDate=${startDate}, EndDate=${endDate}, ConnectionId=${currentConnectionId}`);
+        showMessage('Запускаємо фонову генерацію...', 'info');
+
+        // Відображаємо контейнер прогрес-бару та скидаємо його стан
+        document.getElementById('progressContainer').style.display = 'block';
+        document.getElementById('progressBar').style.width = '0%';
+        document.getElementById('progressBar').setAttribute('aria-valuenow', 0);
+        document.getElementById('progressBar').textContent = '0%';
+        document.getElementById('progressMessage').textContent = 'Очікування початку генерації...';
+        document.getElementById('progressBar').classList.add('progress-bar-animated'); // Забезпечити анімацію
+
+        try {
+            console.log("Sending request to /PlayList/StartGeneration...");
+            const requestPayload = {
+                StartDate: startDate,
+                EndDate: endDate,
+                ConnectionId: currentConnectionId
+            };
+            console.log("Request Payload for StartGeneration:", JSON.stringify(requestPayload));
+
+            const response = await fetch('/PlayList/StartGeneration', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestPayload)
+            });
+
+            console.log("Response received for /PlayList/StartGeneration.");
+            console.log("Response status:", response.status);
+            console.log("Content-Type header:", response.headers.get('content-type'));
+
+            const responseText = await response.text();
+            console.log("Full response text for StartGeneration:", responseText);
+
+            let data = null;
+            const contentType = response.headers.get("content-type");
+
+            if (responseText && contentType && contentType.includes("application/json")) {
+                try {
+                    data = JSON.parse(responseText);
+                    console.log("Parsed JSON data for StartGeneration:", data);
+                } catch (jsonError) {
+                    console.error("Error parsing JSON for StartGeneration:", jsonError, "Received text:", responseText);
+                    showMessage(`Помилка: Сервер повернув невалідний JSON для фонової генерації. Деталі в консолі.`, 'danger');
+                    document.getElementById('progressContainer').style.display = 'none'; // Приховуємо прогрес-бар
+                    return;
+                }
+            } else if (responseText) {
+                console.warn("Server returned non-JSON response for StartGeneration. Received text:", responseText);
+                showMessage(`Помилка: Сервер повернув неочікуваний тип відповіді для фонової генерації. Деталі в консолі.`, 'danger');
+                document.getElementById('progressContainer').style.display = 'none'; // Приховуємо прогрес-бар
+                return;
+            } else {
+                console.warn("Server returned empty response for StartGeneration.");
+                showMessage(`Помилка: Сервер повернув порожню відповідь для фонової генерації.`, 'danger');
+                document.getElementById('progressContainer').style.display = 'none'; // Приховуємо прогрес-бар
+                return;
+            }
+
+            if (!response.ok) {
+                showMessage(`Помилка запуску фонової генерації: ${data?.Message || 'Невідома помилка'} (Статус: ${response.status})`, 'danger');
+                console.error('Серверна помилка (StartGeneration):', data, response);
+                document.getElementById('progressContainer').style.display = 'none'; // Приховуємо прогрес-бар
+            } else if (data && data.connectionId) { // <-- ЗМІНЕНО ConnectionId НА connectionId
+                // Якщо успішно, SignalR вже почне надсилати оновлення.
+                // Тут ми просто підтверджуємо, що запит на старт успішний.
+                showMessage(`Фонова генерація розпочата. Прогрес відстежується нижче.`, 'info');
+            } else {
+                // Це повідомлення тепер має з'являтися тільки якщо connectionId дійсно відсутній або порожній.
+                showMessage(`Фонова генерація розпочата, але відповідь сервера не містить очікуваного ConnectionId (або він порожній).`, 'info');
+            }
+
+        } catch (error) {
+            showMessage(`Неочікувана помилка (StartGeneration): ${error.message}`, 'danger');
+            console.error('Помилка AJAX (StartGeneration):', error);
+            document.getElementById('progressContainer').style.display = 'none'; // Приховуємо прогрес-бар
+        }
+    }
+</script>
+}

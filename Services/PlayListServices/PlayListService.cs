@@ -6,78 +6,33 @@ namespace TaskHub.Services.PlayListServices;
 
 public class PlaylistService
 {
-    private readonly PlaylistService _playlistService;
-
-    public PlaylistService(PlaylistService playlistService)
+    public async Task<List<PlayList>> BuildDeafultPlayLists(List<PlayListQuery> queries)
     {
-        _playlistService = playlistService;
-    }
+        var results = new List<PlayList>();
+        
+        await Task.Delay(2000); // затримка 2 секунди
 
-    public List<PlayList> BuildPlaylist(StationDaySelectionViewModel model)
-    {
-        var playLists = new List<PlayList>();
-
-        return playLists;
-    }
-
-    /// Основний метод для створення плейлистів на основі моделі з view.
-    public List<PlayList> GeneratePlayListsForSelection(StationDaySelectionViewModel selection)
-    {
-        var playLists = new List<PlayList>();
-
-        foreach (var station in selection.Stations)
+        foreach (var query in queries)
         {
-            // 1. Отримати WorkStationID по StationId
-            int workStationId = station.WorkStationID;
-
-            foreach (var selectedDate in station.SelectedDates)
+            // Імітуємо створення плейлисту
+            var playlist = new PlayList
             {
-                // 2. Парсимо дату
-                DateTime date = selectedDate;
+                ID = query.WorkStationId * 1000 + query.Date.Day, // Унікальний Id для прикладу
+                WorkStationID = query.WorkStationId,
+                Date = query.Date,
+                Updated = DateTime.Now,
+                SoundVolume = "Medium",
+                Played = false
+            };
 
-                // 3. Створюємо PlayList
-                var playList = CreatePlayList(workStationId, date);
+            // Імітуємо додавання кількох PlayListItem
+            playlist.Items.Add(PlayListItem.Create(-1, playlist, clipId: 101, start: 0, startPosition: 0));
+            playlist.Items.Add(PlayListItem.Create(-1, playlist, clipId: 102, start: 10, startPosition: 5));
+            playlist.Items.Add(PlayListItem.Create(-1, playlist, clipId: 103, start: 20, startPosition: 15));
 
-                // 4. Генеруємо елементи
-                playList.Items = GeneratePlayListItems(playList, station.WorkStationID, date);
-
-                // 5. Додаємо в список
-                playLists.Add(playList);
-            }
+            results.Add(playlist);
         }
 
-        return playLists;
-    }
-
-    /// Створює об'єкт PlayList із дефолтними значеннями.
-    private PlayList CreatePlayList(int workStationId, DateTime date)
-    {
-        var playList = new PlayList
-        {
-            ID = 0, // Якщо збереження в БД – потім згенерується
-            WorkStationID = workStationId,
-            Date = date,
-            Updated = DateTime.Now,
-            SoundVolume = "", // Або за замовчуванням
-            Played = false,
-        };
-        playList.Items = GeneratePlayListItems(playList, workStationId, date);
-        return playList;
-    }
-
-    /// Генерує список PlayListItem для заданої станції та дати.
-    /// Якщо не потрібні – просто повертай порожній список.
-    private IList<PlayListItem> GeneratePlayListItems(PlayList playList, int WorkStationID, DateTime date)
-    {
-        // // TODO: Реалізуй логіку, якщо є джерело кліпів (наприклад, репозиторій)
-        // // Можеш поки повертати порожній список, якщо немає даних
-        // return new List<PlayListItem>();
-        //
-        // // Приклад: повертаємо два елементи плейлиста       
-        return new List<PlayListItem>
-        {
-            PlayListItem.Create(1, playList, 123, 0.0, 0.0),
-            PlayListItem.Create(2, playList, 124, 30.0, 0.0)
-        };
+        return results;
     }
 }
