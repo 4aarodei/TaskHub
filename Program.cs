@@ -2,25 +2,43 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using TaskHub.Controllers;
 using TaskHub.Data;
+using TaskHub.Hubs;
 using TaskHub.Models;
 using TaskHub.Services;
 using TaskHub.Services.PlayListServices;
-using TaskHub.Models.Playlist.NewBackGroungLogic; // Додаємо using для Hubs
-using TaskHub.Workers;
+using TaskHub.PlaylistWorker;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+// ===========================
+// 🔌 Database Configuration
+// ===========================
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
+
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-builder.Services.AddDefaultIdentity<AppUser>(options => options.SignIn.RequireConfirmedAccount = true)
-    .AddEntityFrameworkStores<ApplicationDbContext>();
-builder.Services.AddControllersWithViews();
+// ===========================
+// 👤 Identity Configuration
+// ===========================
+builder.Services.AddDefaultIdentity<AppUser>(options =>
+{
+    options.SignIn.RequireConfirmedAccount = true;
+})
+.AddEntityFrameworkStores<ApplicationDbContext>();
 
-// Add custom services
+// ===========================
+// ⚙ MVC & Razor Pages
+// ===========================
+builder.Services.AddControllersWithViews();
+builder.Services.AddRazorPages();
+
+// ===========================
+// 🧩 Application Services
+// ===========================
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<PlaylistService>();
 builder.Services.AddScoped<TaskService>();
@@ -28,25 +46,27 @@ builder.Services.AddScoped<TeamService>();
 builder.Services.AddScoped<InviteService>();
 builder.Services.AddHttpContextAccessor();
 
-// playList (Твої існуючі сервіси для плейлистів)
+// ===========================
+// 🧠 Плейліст-сервіси (WS/реальні/фейкові)
+// ===========================
 builder.Services.AddScoped<IWS_Service, FakeWS_Service>();
-// builder.Services.AddScoped<PlaylistService>(); // Закоментовано, якщо не використовується
+// Якщо використовуєш PlaylistService вже вище — закоментовувати повторно не треба
 
-// --- Додаємо нові сервіси для фонової генерації та SignalR ---
-// Реєстрація черги задач як синглтона
-builder.Services.AddSingleton<IBackgroundTaskQueue, BackgroundTaskQueue>();
-// Реєстрація фонового сервісу, який обробляє чергу
-builder.Services.AddHostedService<PlaylistWorker>();
-// Реєстрація сервісу генерації плейлистів (Scoped, оскільки він має залежність від IHubContext)
-builder.Services.AddScoped<IPlaylistGeneratorService, PlaylistGeneratorService>();
-// Додаємо SignalR
+// ===========================
+// ⚙️ Фонова генерація плейлістів + SignalR
+// ===========================
+builder.Services.AddSingleton<IBackgroundTaskQueue, BackgroundTaskQueue>(); // Task queue
+builder.Services.AddHostedService<PlaylistWorker>(); // Worker that handles queue
+builder.Services.AddSignalR(); // SignalR support
 
-builder.Services.AddSignalR();
-// --- Кінець додавання нових сервісів ---
-
+// ===========================
+// 🚀 App Build
+// ===========================
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// ===========================
+// 🌐 Middleware Configuration
+// ===========================
 if (app.Environment.IsDevelopment())
 {
     app.UseMigrationsEndPoint();
@@ -54,7 +74,6 @@ if (app.Environment.IsDevelopment())
 else
 {
     app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
@@ -62,16 +81,21 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
-
+app.UseAuthentication(); // Додай, якщо використовуєш Identity
 app.UseAuthorization();
 
-// --- Мапуємо SignalR хаб ---
+// ===========================
+// 📡 SignalR Hub Routing
+// ===========================
 app.MapHub<ProgressHub>("/progressHub");
-// --- Кінець мапування SignalR хабу ---
 
+// ===========================
+// 📦 MVC Routing
+// ===========================
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
+
 app.MapRazorPages();
 
 app.Run();

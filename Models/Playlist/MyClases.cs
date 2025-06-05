@@ -34,9 +34,8 @@ public class PlayListQuery
     }
 }
 
-public class BuildPlayListResult
-{
-    public PlayListQuery Query { get; set; }
-    public PlayList PlayList { get; set; }
-}
-
+//public class BuildPlayListResult
+//{
+//    public PlayListQuery Query { get; set; }
+//    public PlayList PlayList { get; set; }
+//}
