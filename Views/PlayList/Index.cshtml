@@ -14,6 +14,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
 
 <style>
+    /* ... ваші стилі залишаються без змін ... */
     .cell-checkbox {
         display: none;
     }
@@ -61,7 +62,7 @@
 
 <div class="container mt-4">
     <h2 class="mb-4">Вибір днів для станцій</h2>
-    
+
     <div class="progress mt-3" style="height: 25px;">
         <div id="progressBar" class="progress-bar" role="progressbar" style="width: 0%">0%</div>
     </div>
@@ -135,9 +136,11 @@
             <button type="button" class="btn btn-success" id="generateBtn">Зберегти вибір</button>
         </div>
 
-
         <div id="successMessage" class="alert alert-success mt-3" style="display: none;">
-            Данні успішно відправленно на генерацію плейлисту!
+            Дані успішно відправлено на генерацію плейлисту!
+        </div>
+
+        <div id="errorMessage" class="alert alert-danger mt-3" style="display: none;">
         </div>
     </form>
 </div>
@@ -153,21 +156,71 @@
             });
         });
 
+        const generateBtn = document.getElementById("generateBtn");
+        const progressBar = document.getElementById("progressBar");
+        const successMessage = document.getElementById("successMessage");
+        const errorMessage = document.getElementById("errorMessage");
+
         const connection = new signalR.HubConnectionBuilder()
             .withUrl("/progressHub")
             .build();
 
         connection.start().then(() => {
             document.getElementById("sessionId").value = connection.connectionId;
-        }).catch(err => console.error(err.toString()));
-
-        connection.on("ReceiveProgress", function (progress) {
-            const progressBar = document.getElementById("progressBar");
-            progressBar.style.width = progress + "%";
-            progressBar.innerText = progress + "%";
+        }).catch(err => {
+            console.error(err.toString());
+            errorMessage.innerText = "Не вдалося підключитися до сервісу оновлень. Перезавантажте сторінку.";
+            errorMessage.style.display = "block";
         });
 
-        document.getElementById("generateBtn").addEventListener("click", function () {
+        connection.on("ReceiveProgress", function (progress) {
+            progressBar.classList.remove("bg-danger");
+            progressBar.classList.add("bg-info");
+            progressBar.style.width = progress + "%";
+            progressBar.innerText = progress + "%";
+
+            if (progress === 100) {
+                progressBar.classList.remove("bg-info");
+                progressBar.classList.add("bg-success");
+                generateBtn.disabled = false;
+                generateBtn.innerText = "Зберегти вибір";
+            }
+        });
+
+        // НОВИЙ ОБРОБНИК ДЛЯ ПОМИЛОК SIGNALR
+        connection.on("ReceiveError", function (message) {
+            console.error("SignalR Error:", message);
+
+            // 1. Показуємо повідомлення про помилку
+            errorMessage.innerText = message;
+            errorMessage.style.display = "block";
+            successMessage.style.display = "none";
+
+            // 2. Фарбуємо прогрес-бар у червоний
+            progressBar.style.width = "100%";
+            progressBar.innerText = "Помилка!";
+            progressBar.classList.remove("bg-info", "bg-success");
+            progressBar.classList.add("bg-danger");
+
+            // 3. Розблоковуємо кнопку, щоб можна було спробувати ще раз
+            generateBtn.disabled = false;
+            generateBtn.innerText = "Спробувати ще раз";
+        });
+
+        generateBtn.addEventListener("click", function () {
+            // --- Підготовка до нового запиту ---
+            // Блокуємо кнопку для уникнення повторних натискань
+            generateBtn.disabled = true;
+            generateBtn.innerText = "Генерація...";
+
+            // Скидаємо повідомлення та прогрес-бар
+            successMessage.style.display = "none";
+            errorMessage.style.display = "none";
+            progressBar.style.width = "0%";
+            progressBar.innerText = "0%";
+            progressBar.classList.remove("bg-danger", "bg-success", "bg-info");
+            // ------------------------------------
+
             const form = document.getElementById("playlistForm");
             const formData = new FormData(form);
 
@@ -175,17 +228,29 @@
                 method: 'POST',
                 body: formData
             })
-            .then(res => res.ok ? res.json() : Promise.reject("Помилка збереження"))
+            .then(res => {
+                if (!res.ok) {
+                    // Якщо сервер повернув помилку (статус не 2xx)
+                    return Promise.reject(`Помилка сервера: ${res.status} ${res.statusText}`);
+                }
+                return res.json();
+            })
             .then(data => {
                 if (data.success) {
-                    document.getElementById("successMessage").style.display = "block";
-                    setTimeout(() => {
-                        document.getElementById("successMessage").style.display = "none";
-                    }, 3000);
+                    successMessage.style.display = "block";
+                } else {
+                    // Якщо сервер повернув JSON, але з помилкою
+                    return Promise.reject(data.message || 'Невідома помилка під час запуску.');
                 }
             })
             .catch(err => {
-                alert("Щось пішло не так: " + err);
+                // Обробка будь-яких помилок, що сталися вище   
+                errorMessage.innerText = "Не вдалося запустити генерацію: " + err;
+                errorMessage.style.display = "block";
+
+                // Розблоковуємо кнопку, оскільки процес не розпочався
+                generateBtn.disabled = false;
+                generateBtn.innerText = "Зберегти вибір";
             });
         });
     });
