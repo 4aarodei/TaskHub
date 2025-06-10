@@ -61,19 +61,25 @@
 
 <div class="container mt-4">
     <h2 class="mb-4">Вибір днів для станцій</h2>
+    
+    <div class="progress mt-3" style="height: 25px;">
+        <div id="progressBar" class="progress-bar" role="progressbar" style="width: 0%">0%</div>
+    </div>
 
-    <form asp-action="Index" method="get" class="row g-3 mb-4">
+    <form id="dateForm" method="get" class="row g-3 mb-4">
         <div class="col-md-4">
             <label for="startDate" class="form-label">Початкова дата</label>
-            <input type="date" id="startDate" name="startDate" class="form-control" value="@Model.StartDate.ToString("yyyy-MM-dd")" onchange="this.form.submit()" />
+            <input type="date" id="startDate" name="startDate" class="form-control"
+                   value="@Model.StartDate.ToString("yyyy-MM-dd")" onchange="this.form.submit()" />
         </div>
         <div class="col-md-4">
             <label for="endDate" class="form-label">Кінцева дата</label>
-            <input type="date" id="endDate" name="endDate" class="form-control" value="@Model.EndDate.ToString("yyyy-MM-dd")" onchange="this.form.submit()" />
+            <input type="date" id="endDate" name="endDate" class="form-control"
+                   value="@Model.EndDate.ToString("yyyy-MM-dd")" onchange="this.form.submit()" />
         </div>
     </form>
 
-    <form id="playlistForm" asp-action="RegeneratePlaylist" method="post">
+    <form id="playlistForm">
         <input type="hidden" name="StartDate" value="@Model.StartDate.ToString("yyyy-MM-dd")" />
         <input type="hidden" name="EndDate" value="@Model.EndDate.ToString("yyyy-MM-dd")" />
         <input type="hidden" id="sessionId" name="sessionId" value="" />
@@ -126,18 +132,18 @@
         </div>
 
         <div class="mt-3">
-            <button type="submit" class="btn btn-success">Зберегти вибір</button>
+            <button type="button" class="btn btn-success" id="generateBtn">Зберегти вибір</button>
         </div>
 
-        <div class="progress mt-3" style="height: 25px;">
-            <div id="progressBar" class="progress-bar" role="progressbar" style="width: 0%">0%</div>
+
+        <div id="successMessage" class="alert alert-success mt-3" style="display: none;">
+            Данні успішно відправленно на генерацію плейлисту!
         </div>
     </form>
 </div>
 
 <script>
     document.addEventListener("DOMContentLoaded", function () {
-        // Клік по назві станції - відмітити всі дні
         const stationNames = document.querySelectorAll(".station-name");
         stationNames.forEach(cell => {
             cell.addEventListener("click", function () {
@@ -147,21 +153,40 @@
             });
         });
 
-        // Підключення до SignalR хаба
         const connection = new signalR.HubConnectionBuilder()
-    .withUrl("/progressHub")
-                .build();
+            .withUrl("/progressHub")
+            .build();
 
         connection.start().then(() => {
-            // Записуємо sessionId в прихований інпут форми
-                 document.getElementById("sessionId").value = connection.connectionId;
-    }).catch(err => console.error(err.toString()));
+            document.getElementById("sessionId").value = connection.connectionId;
+        }).catch(err => console.error(err.toString()));
 
-        // Оновлення прогресу
         connection.on("ReceiveProgress", function (progress) {
             const progressBar = document.getElementById("progressBar");
             progressBar.style.width = progress + "%";
             progressBar.innerText = progress + "%";
+        });
+
+        document.getElementById("generateBtn").addEventListener("click", function () {
+            const form = document.getElementById("playlistForm");
+            const formData = new FormData(form);
+
+            fetch('/PlayList/RegeneratePlaylist', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.ok ? res.json() : Promise.reject("Помилка збереження"))
+            .then(data => {
+                if (data.success) {
+                    document.getElementById("successMessage").style.display = "block";
+                    setTimeout(() => {
+                        document.getElementById("successMessage").style.display = "none";
+                    }, 3000);
+                }
+            })
+            .catch(err => {
+                alert("Щось пішло не так: " + err);
+            });
         });
     });
 </script>

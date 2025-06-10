@@ -55,8 +55,11 @@ public class PlayListController : Controller
     {
         if (string.IsNullOrEmpty(sessionId))
         {
-            return BadRequest("sessionId is missing");
+            _logger.LogInformation("missing session ID");
+            return Json(new { success = false });
         }
+
+        _logger.LogInformation("session ID - OK");
 
         var queries = model.Stations
             .SelectMany(station => station.SelectedDates
@@ -68,8 +71,9 @@ public class PlayListController : Controller
             await _playlistService.BuildDefaultPlaylistsAsync(queries, sessionId, token);
         });
 
-        return Ok(new { status = "started" });
+        return Json(new { success = true });
     }
+
 
 }
 
