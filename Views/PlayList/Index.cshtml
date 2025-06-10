@@ -63,9 +63,7 @@
 <div class="container mt-4">
     <h2 class="mb-4">Вибір днів для станцій</h2>
 
-    <div class="progress mt-3" style="height: 25px;">
-        <div id="progressBar" class="progress-bar" role="progressbar" style="width: 0%">0%</div>
-    </div>
+   
 
     <form id="dateForm" method="get" class="row g-3 mb-4">
         <div class="col-md-4">
@@ -131,17 +129,22 @@
                 </tbody>
             </table>
         </div>
+        
+        <div class="progress mt-3" style="height: 25px;">
+            <div id="progressBar" class="progress-bar" role="progressbar" style="width: 0%">0%</div>
+        </div>
+        
+        <div id="errorMessage" class="alert alert-danger mt-3" style="display: none;">
+        </div>
+        
+        <div id="successMessage" class="alert alert-success mt-3" style="display: none;">
+            Дані успішно відправлено на генерацію плейлисту!
+        </div>
 
         <div class="mt-3">
             <button type="button" class="btn btn-success" id="generateBtn">Зберегти вибір</button>
         </div>
 
-        <div id="successMessage" class="alert alert-success mt-3" style="display: none;">
-            Дані успішно відправлено на генерацію плейлисту!
-        </div>
-
-        <div id="errorMessage" class="alert alert-danger mt-3" style="display: none;">
-        </div>
     </form>
 </div>
 
